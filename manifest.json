@@ -1,17 +1,40 @@
 {
+  "version": "1.0",
+  "name": "FoxHorn",
+  "description": "Tool for drive online media players.",
+  "homepage_url": "https://github.com/wayerr/foxhorn",
+  "manifest_version": 2,
   "browser_action": {
     "browser_style": true,
     "default_title": "FoxHorn",
     "default_popup": "src/popup.html"
   },
-  "description": "A list of methods you can perform on a tab.",
-  "homepage_url": "https://github.com/wayerr/foxhorn",
-  "manifest_version": 2,
-  "name": "FoxHorn",
+  "commands": {
+    "cmd-play": {
+      "suggested_key": {
+        "default": "Ctrl+Shift+End"
+      },
+      "description": "Toggle play/pause"
+    },
+    "cmd-prev": {
+      "suggested_key": {
+        "default": "Ctrl+Shift+Left"
+      },
+      "description": "Next track"
+    },
+    "cmd-next": {
+      "suggested_key": {
+        "default": "Ctrl+Shift+Right"
+      },
+      "description": "Previous track"
+    }
+  },
+  "background": {
+    "scripts": ["src/daemon.js"]
+  },
   "permissions": [
     "tabs",
     "activeTab",
     "<all_urls>"
-  ],
-  "version": "1.0"
+  ]
 }
