@@ -35,6 +35,7 @@ class DefaultPlayer extends Player {
     }
 
     constructor(tag) {
+        super();
         this.media = tag;
     }
 
@@ -58,6 +59,7 @@ class DefaultPlayer extends Player {
 }
 
 class KeyboardDrivenPlayer extends Player {
+
     static factory() {
         return new KeyboardDrivenPlayer({
             play:'p',
@@ -66,17 +68,57 @@ class KeyboardDrivenPlayer extends Player {
         });
     }
 
+    constructor(keys) {
+        super();
+        this.keys = keys;
+    }
+
     pressKey(key) {
         function createEvent(type) {
-            let e = document.createEvent("KeyboardEvent");
-            let initMethod = typeof e.initKeyboardEvent !== 'undefined' ? "initKeyboardEvent" : "initKeyEvent";
-            e[initMethod](type, true, true, window, false, false, false, false, key, key);
+            let e = new KeyboardEvent(type, {
+                key: key,
+                code: "Key" + key.toUpperCase(),
+                bubbles: true,
+                cancelable: true
+            });
             return e;
         }
-        document.dispatchEvent(createEvent("keydown"));
-        document.dispatchEvent(createEvent("keypress"));
-        document.dispatchEvent(createEvent("keyup"));
+
+        console.debug("press key:", key, " in ", document);
+        try {
+            document.dispatchEvent(createEvent("keydown"));
+            document.dispatchEvent(createEvent("keypress"));
+            document.dispatchEvent(createEvent("keyup"));
+        } catch (e) {
+            console.error(e);
+        }
     }
+
+    play() {
+        this.pressKey(this.keys.play);
+    }
+
+    pause() {
+        this.pressKey(this.keys.pause || this.keys.play);
+    }
+
+    next() {
+        this.pressKey(this.keys.next);
+    }
+
+    prev() {
+        this.pressKey(this.keys.prev);
+    }
+
+    getState() {
+        let track = {id:"track", title:"current media", duration: null};
+        return {
+            paused: false,
+            played: false,
+            tracks: [track]
+        };
+    }
+
 };
 
 class Content {
@@ -133,7 +175,7 @@ class Content {
             console.error(`No '${method}' in player: ${player}`);
             return;
         }
-        let res = func();
+        let res = func.apply(player);
         sendResponse(res);
     }
 }
