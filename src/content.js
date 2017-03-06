@@ -10,7 +10,6 @@ class Player {
             // max tracks - 10
             // each track: {id:obj, title:"text", duration: 213454 /*seconds*/}
             //
-            current: {/*track*/},
             // list of tracks is not required
             tracks: [
                 {/*track*/},
@@ -19,19 +18,6 @@ class Player {
         };
     }
 }
-
-function pressKey(key) {
-    function createEvent(type) {
-        let e = document.createEvent("KeyboardEvent");
-        let initMethod = typeof e.initKeyboardEvent !== 'undefined' ? "initKeyboardEvent" : "initKeyEvent";
-        e[initMethod](type, true, true, window, false, false, false, false, key, key);
-        return e;
-    }
-    document.dispatchEvent(createEvent("keydown"));
-    document.dispatchEvent(createEvent("keypress"));
-    document.dispatchEvent(createEvent("keyup"));
-}
-
 
 class DefaultPlayer extends Player {
 
@@ -66,19 +52,39 @@ class DefaultPlayer extends Player {
         return {
             paused: media.paused,
             played: media.played,
-            current: track,
-            tracks: []
+            tracks: [track]
         };
     }
 }
 
 class KeyboardDrivenPlayer extends Player {
     static factory() {
+        return new KeyboardDrivenPlayer({
+            play:'p',
+            next:'l',
+            prev:'k'
+        });
+    }
+
+    pressKey(key) {
+        function createEvent(type) {
+            let e = document.createEvent("KeyboardEvent");
+            let initMethod = typeof e.initKeyboardEvent !== 'undefined' ? "initKeyboardEvent" : "initKeyEvent";
+            e[initMethod](type, true, true, window, false, false, false, false, key, key);
+            return e;
+        }
+        document.dispatchEvent(createEvent("keydown"));
+        document.dispatchEvent(createEvent("keypress"));
+        document.dispatchEvent(createEvent("keyup"));
     }
 };
 
 class Content {
     constructor() {
+        let ps = this.players = {};
+        for(let p of [KeyboardDrivenPlayer, DefaultPlayer]) {
+            ps[p.name] = p;
+        }
         this._player = null;
     }
 
@@ -93,12 +99,29 @@ class Content {
         let listen = (src, func) => {
             src.addListener(func.bind(this));
         };
-
         listen(browser.runtime.onMessage, this.onMessage);
+        let msg = {
+            method:"player-get",
+            arg: {
+                url: window.location.href
+            }
+        };
+        browser.runtime.sendMessage(msg).then((player) => {
+            console.debug("Receive player:", player);
+            if(!player) {
+                return;
+            }
+            let type = this.players[player.name];
+            console.debug("Use player type :", type);
+            if(type) {
+                this._player = type.factory();
+                console.debug("Make player: ", this._player);
+            }
+        }, console.error);
     }
 
     onMessage(msg, sender, sendResponse) {
-        console.debug("MSG:", msg);
+        console.debug("msg in content:", msg);
         let player = this.getPlayer();
         if(!player) {
             console.warn('No initialised player');
