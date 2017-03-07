@@ -32,10 +32,14 @@
   "background": {
     "scripts": ["src/daemon.js"]
   },
+  "options_ui": {
+    "page": "src/options.html"
+  },
   "permissions": [
     "tabs",
     "activeTab",
     "webNavigation",
-    "<all_urls>"
+    "<all_urls>",
+    "storage"
   ]
 }
