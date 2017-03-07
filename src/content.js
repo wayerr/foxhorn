@@ -130,6 +130,13 @@ class Content {
             ps[p.name] = p;
         }
         this._player = null;
+        this.rpc = new Rpc({
+            methods: {
+                "player-play": this.invokePlayer("play"),
+                "player-prev": this.invokePlayer("prev"),
+                "player-next": this.invokePlayer("next")
+            }
+        });
     }
 
     getPlayer() {
@@ -143,14 +150,9 @@ class Content {
         let listen = (src, func) => {
             src.addListener(func.bind(this));
         };
-        listen(browser.runtime.onMessage, this.onMessage);
-        let msg = {
-            method:"player-get",
-            arg: {
-                url: window.location.href
-            }
-        };
-        browser.runtime.sendMessage(msg).then((player) => {
+        
+        this.rpc.call("player-get")({url: window.location.href})
+                .then((player) => {
             console.debug("Receive player:", player);
             if(!player) {
                 return;
@@ -161,24 +163,25 @@ class Content {
                 this._player = type.factory();
                 console.debug("Make player: ", this._player);
             }
-        }, console.error);
+        });
     }
 
-    onMessage(msg, sender, sendResponse) {
-        console.debug("msg in content:", msg);
-        let player = this.getPlayer();
-        if(!player) {
-            console.warn('No initialised player');
-            return;
-        }
-        let method = msg.method;
-        let func = player[method];
-        if(!func) {
-            console.error(`No '${method}' in player: ${player}`);
-            return;
-        }
-        let res = func.apply(player);
-        sendResponse(res);
+    invokePlayer(name) {
+        return () => {
+            let player = this.getPlayer();
+            var res = null;
+            if(player) {
+                let func = player[name];
+                if(func) {
+                    res = func.apply(player);
+                } else {
+                    console.error(`No '${name}' in player: ${player}`);
+                }
+            } else {
+                console.warn('No initialised player');
+            }
+            return res;
+        };
     }
 }
 

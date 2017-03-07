@@ -4,16 +4,20 @@ class Daemon {
             tabId: null
         };
         this.cmdHandlers = {
-            "cmd-play": this.invokePlayer("play"),
-            "cmd-prev": this.invokePlayer("prev"),
-            "cmd-next": this.invokePlayer("next")
+            "cmd-play": this.invokePlayer("player-play"),
+            "cmd-prev": this.invokePlayer("player-prev"),
+            "cmd-next": this.invokePlayer("player-next")
         };
-        this.msgHandlers = {
-            "player-play": this.invokePlayer("play"),
-            "player-prev": this.invokePlayer("prev"),
-            "player-next": this.invokePlayer("next"),
-            "player-get": this.dispatch(this.resolvePlayer)
-        };
+        this.rpc = new Rpc({
+            methods:{
+                "player-get": this.resolvePlayer
+            },
+            handlers: {
+                "player-play": this.invokePlayer("player-play"),
+                "player-prev": this.invokePlayer("player-prev"),
+                "player-next": this.invokePlayer("player-next")
+            }
+        });
     }
 
     init() {
@@ -23,23 +27,9 @@ class Daemon {
         };
 
         listen(browser.commands.onCommand, this.onCommand);
-        listen(browser.runtime.onMessage, this.onMessage);
         listen(browser.webNavigation.onCompleted, this.onPageChanged);
 
         this.findPlayer();
-    }
-
-    dispatch(method) {
-        return (arg) => {
-            console.debug("Call of ", method, " with ", arg);
-            try {
-                let res = method.apply(this, [arg.arg]);
-                console.debug("Call of ", method, " got ", res);
-                arg.sendResponse(res);
-            } catch(e) {
-                console.error("Fail to call " , method, " due to error:", e);
-            }
-        };
     }
 
     findPlayer() {
@@ -70,26 +60,6 @@ class Daemon {
         }
     }
 
-    onMessage(msg, sender, sendResponse) {
-        console.debug("msg in daemon:", msg);
-        let method = msg.method;
-        if(!method) {
-            console.warn(`Unexpected message '${msg}' without 'method' field`);
-            return;
-        }
-        let handler = this.msgHandlers[method];
-        if(!handler) {
-            console.warn(`Can not find handler for method '${method}' of message:`, msg);
-            return;
-        }
-        let arg = {
-            arg: msg.arg || {},
-            sender: sender,
-            sendResponse: (e) => sendResponse(e) // it prevent warning
-        };
-        handler(arg);
-    }
-
     invokePlayer(method) {
         return (arg) => {
             let player = this.player;
@@ -112,7 +82,10 @@ class Daemon {
         if(arg.url.indexOf("music.yandex") > 0) {
             return {name:"KeyboardDrivenPlayer"};
         }
-        return {name:"DefaultPlayer"};
+        if(arg.url.indexOf("pleer.net") > 0) {
+            return {name:"DefaultPlayer"};
+        }
+        return null;//;
     }
 
     onPageChanged(e) {
@@ -125,7 +98,7 @@ class Daemon {
         if(!playerSrc) {
             if(isPlayerTab) {
                 // clean player
-                this.player.tabId = null;
+                this.player = {};
             }
             return;
         }
@@ -151,11 +124,15 @@ class Daemon {
             }
         };
 
-        browser.tabs.executeScript(arg.tabId, {file:"src/content.js"})
-                .then(null, (e) => console.error('On inject player driver we got error:', e));
+        let errHandler = (e) => console.error('On inject player driver we got error:', e);
+        browser.tabs.executeScript(arg.tabId, {file:"src/common.js"}).catch(errHandler)
+                .then(() => {
+                    browser.tabs.executeScript(arg.tabId, {file:"src/content.js"}).catch(errHandler);
+                });
     }
 }
 
+//common.test();
 let daemon = new Daemon();
 
 daemon.init();
