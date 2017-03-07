@@ -75,9 +75,11 @@ class KeyboardDrivenPlayer extends Player {
 
     pressKey(key) {
         function createEvent(type) {
+            let uk = key.toUpperCase();
             let e = new KeyboardEvent(type, {
                 key: key,
-                code: "Key" + key.toUpperCase(),
+                keyCode: uk.charCodeAt(0),
+                code: "Key" + uk,
                 bubbles: true,
                 cancelable: true
             });
