@@ -80,10 +80,10 @@ class Daemon {
 
     resolvePlayer(arg) {
         if(arg.url.indexOf("music.yandex") > 0) {
-            return {name:"KeyboardDrivenPlayer"};
+            return {name:"key_driven"};
         }
         if(arg.url.indexOf("pleer.net") > 0) {
-            return {name:"DefaultPlayer"};
+            return {name:"default"};
         }
         return null;//;
     }
@@ -124,11 +124,16 @@ class Daemon {
             }
         };
 
-        let errHandler = (e) => console.error('On inject player driver we got error:', e);
-        browser.tabs.executeScript(arg.tabId, {file:"src/common.js"}).catch(errHandler)
-                .then(() => {
-                    browser.tabs.executeScript(arg.tabId, {file:"src/content.js"}).catch(errHandler);
-                });
+        function executor(arr) {
+            let src = arr.shift();
+            console.debug("Execute ", src, " in ", arg.tabId);
+            let promise = browser.tabs.executeScript(arg.tabId, {file: src});
+            promise.catch((e) => console.error('On exec ', src, ' we got error:', e));
+            if(arr.length > 0) {
+                promise.then(() => executor(arr));
+            }
+        };
+        executor(["src/common.js", "src/content.js", `src/player_${arg.player}.js`]);
     }
 }
 

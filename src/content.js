@@ -1,3 +1,5 @@
+/*
+ * iface of player
 class Player {
     play() {}
     pause() {}
@@ -8,162 +10,62 @@ class Player {
             paused:false,
             played:false,
             // max tracks - 10
-            // each track: {id:obj, title:"text", duration: 213454 /*seconds*/}
+            // each track: {id:obj, title:"text", duration: 213454 /seconds/}
             //
             // list of tracks is not required
             tracks: [
-                {/*track*/},
-                {/*track*/}
+                {track},
+                {track}
             ]
         };
     }
-}
+}*/
 
-class DefaultPlayer extends Player {
-
-    static factory() {
-        var items = [];
-        let forEachTag = (tag, handler) => Array.prototype.forEach.call(document.getElementsByTagName(tag), handler);
-        forEachTag("audio", (a) => items.push(a));
-        forEachTag("video", (a) => items.push(a));
-        // we can not support cases when page contains many media elements
-        if(items.length !== 1) {
-            console.error("Too many media on page:", items);
-            return;
-        }
-        return new DefaultPlayer(items[0]);
-    }
-
-    constructor(tag) {
-        super();
-        this.media = tag;
-    }
-
-    play() {
-        this.media.play();
-    }
-    pause() {
-        this.media.pause();
-    }
-    next() {}
-    prev() {}
-    getState() {
-        let media = this.media;
-        let track = {id:"track", title:"current media", duration: media.duration, current: true};
-        return {
-            paused: media.paused,
-            played: media.played,
-            tracks: [track]
-        };
-    }
-}
-
-class KeyboardDrivenPlayer extends Player {
-
-    static factory() {
-        return new KeyboardDrivenPlayer({
-            play:'p',
-            next:'l',
-            prev:'k'
-        });
-    }
-
-    constructor(keys) {
-        super();
-        this.keys = keys;
-    }
-
-    pressKey(key) {
-        function createEvent(type) {
-            let uk = key.toUpperCase();
-            let e = new KeyboardEvent(type, {
-                key: key,
-                keyCode: uk.charCodeAt(0),
-                code: "Key" + uk,
-                bubbles: true,
-                cancelable: true
-            });
-            return e;
-        }
-
-        console.debug("press key:", key, " in ", document);
-        try {
-            document.dispatchEvent(createEvent("keydown"));
-            document.dispatchEvent(createEvent("keypress"));
-            document.dispatchEvent(createEvent("keyup"));
-        } catch (e) {
-            console.error(e);
-        }
-    }
-
-    play() {
-        this.pressKey(this.keys.play);
-    }
-
-    pause() {
-        this.pressKey(this.keys.pause || this.keys.play);
-    }
-
-    next() {
-        this.pressKey(this.keys.next);
-    }
-
-    prev() {
-        this.pressKey(this.keys.prev);
-    }
-
-    getState() {
-        let track = {id:"track", title:"current media", duration: null};
-        return {
-            paused: false,
-            played: false,
-            tracks: [track]
-        };
-    }
-
-};
+let players = {};
 
 class Content {
     constructor() {
-        let ps = this.players = {};
-        for(let p of [KeyboardDrivenPlayer, DefaultPlayer]) {
-            ps[p.name] = p;
-        }
         this._player = null;
         this.rpc = new Rpc({
             methods: {
                 "player-play": this.invokePlayer("play"),
                 "player-prev": this.invokePlayer("prev"),
-                "player-next": this.invokePlayer("next")
+                "player-next": this.invokePlayer("next")/*,
+                "player-inject": this.onPlayerInject*/
             }
         });
     }
 
     getPlayer() {
         if(!this._player) {
-            this._player = DefaultPlayer.factory();
+            let dp = players["default"];
+            if(dp) {
+                this._player = dp.factory();
+            }
         }
         return this._player;
     }
 
     init() {
-        let listen = (src, func) => {
-            src.addListener(func.bind(this));
-        };
-        
-        this.rpc.call("player-get")({url: window.location.href})
-                .then((player) => {
-            console.debug("Receive player:", player);
-            if(!player) {
-                return;
-            }
-            let type = this.players[player.name];
-            console.debug("Use player type :", type);
-            if(type) {
-                this._player = type.factory();
-                console.debug("Make player: ", this._player);
-            }
-        });
+        //this.rpc.call("player-get")({url: window.location.href})
+        //        .then(this.onPlayerInject.bind(this));
+    }
+
+    onPlayerInject(player) {
+        console.debug("Inject player:", player);
+        if(!player) {
+            return;
+        }
+        let type = this.players[player.name];
+        this.initPlayer(type);
+    }
+
+    initPlayer(player) {
+        console.debug("Use player type :", player);
+        if(player) {
+            this._player = player.factory();
+            console.debug("Make player: ", this._player);
+        }
     }
 
     invokePlayer(name) {
@@ -185,12 +87,8 @@ class Content {
     }
 }
 
-console.error('Begin content init');
-try {
-    let content = new Content();
+console.debug('Begin content init');
+content = new Content();
 
-    content.init();
-    console.debug('Content inited');
-} catch (e) {
-    console.error('Can not init content due to error:', e);
-}
+content.init();
+console.debug('Content inited');
