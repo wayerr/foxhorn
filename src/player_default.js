@@ -1,6 +1,6 @@
 class DefaultPlayer {
 
-    static factory() {
+    static factory() {/*
         var items = [];
         let forEachTag = (tag, handler) => Array.prototype.forEach.call(document.getElementsByTagName(tag), handler);
         forEachTag("audio", (a) => items.push(a));
@@ -10,15 +10,52 @@ class DefaultPlayer {
             console.error("Too many media on page:", items);
             return;
         }
-        return new DefaultPlayer(items[0]);
+        return new DefaultPlayer(items[0]);*/
+        let player = new DefaultPlayer();
+        console.debug("Begin create proxy");
+        let w = window.wrappedJSObject;
+        let handler = {
+            construct: (target, argumentsList, newTarget) => {
+                try {
+                    let res = Reflect.construct(target, argumentsList);
+                    console.debug("New audio created: ", res);
+                    res.addEventListener("play", (e) => {
+                        console.debug("Change player due to 'play' event:", e);
+                        player.setMedia(e.target);
+                    });
+                    let callback = (e) => {
+                        content.playerUpdated();
+                    };
+                    res.addEventListener("changed", callback);
+                    res.addEventListener("load", callback);
+                    player.setMedia(res);
+                    return res;
+                } catch (e) {
+                    console.debug("Cannot create", e);
+                }
+            }
+        };
+        w.Audio = new w.Proxy(w.Audio, cloneInto(handler, w, {cloneFunctions:true}));
+        console.debug("End create proxy");
+        return player;
     }
 
-    constructor(tag) {
-        this.media = tag;
+    constructor() {
+
+        
     }
 
     play() {
-        this.media.play();
+        console.debug("PLAY{");
+        if(!this.media) {
+            return;
+        }
+        if(this.media.paused) {
+            this.media.play();
+        } else {
+            this.media.pause();
+        }
+        console.debug("}");
     }
     pause() {
         this.media.pause();
@@ -27,12 +64,18 @@ class DefaultPlayer {
     prev() {}
     getState() {
         let media = this.media;
-        let track = {id:"track", title:"current media", duration: media.duration, current: true};
+        let track = {id:"track", title:document.title, duration: media.duration};
         return {
             paused: media.paused,
-            played: media.played,
             tracks: [track]
         };
+    }
+    setMedia(newmedia) {
+        if(this.media === newmedia) {
+            return;
+        }
+        this.media = newmedia;
+        content.playerUpdated();
     }
 }
 

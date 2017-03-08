@@ -17,10 +17,13 @@ class Popup {
                 "on-player-update": this.onPlayerUpdate
             }
         });
+        this.rpc.call("player-get-state")();
     }
 
     onPlayerUpdate(data) {
         console.debug("Player updated with: ", data);
+        let ti = document.getElementById("track-title");
+        ti.innerText = data.tracks[0].title;
     }
 }
 

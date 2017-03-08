@@ -15,7 +15,8 @@ class Daemon {
             handlers: {
                 "player-play": this.invokePlayer("player-play"),
                 "player-prev": this.invokePlayer("player-prev"),
-                "player-next": this.invokePlayer("player-next")
+                "player-next": this.invokePlayer("player-next"),
+                "player-get-state": this.invokePlayer("player-get-state")
             }
         });
     }
@@ -79,13 +80,13 @@ class Daemon {
     }
 
     resolvePlayer(arg) {
-        if(arg.url.indexOf("music.yandex") > 0) {
+        /*if(arg.url.indexOf("music.yandex") > 0) {
             return {name:"key_driven"};
         }
-        if(arg.url.indexOf("pleer.net") > 0) {
+        if(arg.url.indexOf("pleer.net") > 0) {*/
             return {name:"default"};
-        }
-        return null;//;
+        /*}
+        return null;//;*/
     }
 
     onPageChanged(e) {
@@ -102,10 +103,7 @@ class Daemon {
             }
             return;
         }
-        if(isPlayerTab && this.player.name === playerSrc.name) {
-            // nothing changed
-            return;
-        }
+        console.debug("INJECT:", playerSrc);
         this.injectPlayer({
             tabId: e.tabId,
             player: playerSrc.name,
@@ -127,7 +125,7 @@ class Daemon {
         function executor(arr) {
             let src = arr.shift();
             console.debug("Execute ", src, " in ", arg.tabId);
-            let promise = browser.tabs.executeScript(arg.tabId, {file: src});
+            let promise = browser.tabs.executeScript(arg.tabId, {file: src, runAt:"document_start"});
             promise.catch((e) => console.error('On exec ', src, ' we got error:', e));
             if(arr.length > 0) {
                 promise.then(() => executor(arr));

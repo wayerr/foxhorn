@@ -2,13 +2,11 @@
  * iface of player
 class Player {
     play() {}
-    pause() {}
     next() {}
     prev() {}
     getState() {
         return {
             paused:false,
-            played:false,
             // max tracks - 10
             // each track: {id:obj, title:"text", duration: 213454 /seconds/}
             //
@@ -30,34 +28,17 @@ class Content {
             methods: {
                 "player-play": this.invokePlayer("play"),
                 "player-prev": this.invokePlayer("prev"),
-                "player-next": this.invokePlayer("next")/*,
-                "player-inject": this.onPlayerInject*/
+                "player-next": this.invokePlayer("next"),
+                "player-get-state": this.playerUpdated.bind(this)
             }
         });
     }
 
     getPlayer() {
-        if(!this._player) {
-            let dp = players["default"];
-            if(dp) {
-                this._player = dp.factory();
-            }
-        }
         return this._player;
     }
 
     init() {
-        //this.rpc.call("player-get")({url: window.location.href})
-        //        .then(this.onPlayerInject.bind(this));
-    }
-
-    onPlayerInject(player) {
-        console.debug("Inject player:", player);
-        if(!player) {
-            return;
-        }
-        let type = this.players[player.name];
-        this.initPlayer(type);
     }
 
     initPlayer(player) {
@@ -84,6 +65,18 @@ class Content {
             }
             return res;
         };
+    }
+
+    getPlayerState() {
+        if(!this._player) {
+            return null;
+        }
+        return this._player.getState();
+    }
+
+    playerUpdated() {
+        let state = this.getPlayerState();
+        this.rpc.call("on-player-update")(state);
     }
 }
 
