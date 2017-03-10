@@ -2,10 +2,38 @@ html, body {
   width: 10em;
 }
 
-a {
-  margin: .5em;
-  display: inline-block;
-  text-decoration: none;
-  pointer: handle;
+.panel-section-header {
+    padding: .1em .5em;
 }
 
+.text-section-header {
+    font-size: 1em;
+}
+
+a {
+  margin: 0 .5em;
+  display: inline-block;
+  text-decoration: none;
+  color: grey;
+}
+
+a:hover {
+  color: black;
+}
+
+#actions-list {
+    font-size: 2em;
+    text-align: justify;
+}
+
+#actions-list > a {
+    margin: auto;
+}
+
+#track-title {
+    width: 100%;
+}
+
+.track-info {
+    margin: .2em;
+}

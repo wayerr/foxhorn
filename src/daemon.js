@@ -39,6 +39,7 @@ class Daemon {
         }
         browser.tabs.query({audible:true}).then((tabs) => {
             if(tabs.length < 1) {
+                console.debug("No audible tabs.");
                 return;
             }
             //simply choose first auduble tab
@@ -103,7 +104,6 @@ class Daemon {
             }
             return;
         }
-        console.debug("INJECT:", playerSrc);
         this.injectPlayer({
             tabId: e.tabId,
             player: playerSrc.name,
