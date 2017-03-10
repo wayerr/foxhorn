@@ -10,7 +10,8 @@ class Daemon {
         };
         this.rpc = new Rpc({
             methods:{
-                "player-get": this.resolvePlayer
+                "player-get": this.resolvePlayer,
+                "opts-save": this.loadOpts
             },
             handlers: {
                 "player-play": this.invokePlayer("player-play"),
@@ -19,6 +20,9 @@ class Daemon {
                 "player-get-state": this.invokePlayer("player-get-state")
             }
         });
+        this.opts = new Opts();
+        this.sites = [];
+        this.loadOpts();
     }
 
     init() {
@@ -30,26 +34,66 @@ class Daemon {
         listen(browser.commands.onCommand, this.onCommand);
         listen(browser.webNavigation.onCompleted, this.onPageChanged);
 
+    }
+
+    loadOpts() {
+        this.sites = [];
+        this.opts.load().then(this.onOptsLoaded.bind(this));
+    }
+
+    onOptsLoaded(data) {
+        for(let line of data.sites.split('\n')) {
+            if(line.startsWith("#")) {
+                continue;
+            }
+            let arr = line.split(/\s+/);
+            if(arr.length < 2) {
+                console.error("Invalid site line:", line);
+                continue;
+            }
+            let expr = arr[0];
+            let colonPos = expr.indexOf(':');
+            if(colonPos < 1 || colonPos > expr.length - 2) {
+                console.error("Invalid pattern in site line:", line);
+                continue;
+            }
+            let exprProto = expr.substring(0, colonPos);
+            let exprData = expr.substring(colonPos + 1);
+            let player = arr[1];
+            var matcher = null;
+            if(exprProto === "domain") {
+                matcher = (data) => {
+                    if(exprData === data.domain) {
+                        return player;
+                    }
+                };
+            } else {
+                console.error("Invalid protocol '", exprProto, "' in site line:", line);
+                continue;
+            }
+            this.sites.push({
+                expr: expr,
+                player: player,
+                matcher: matcher
+            });
+        }
         this.findPlayer();
     }
 
     findPlayer() {
-        if(this.player.tabId !== null) {
-            return;
-        }
-        browser.tabs.query({audible:true}).then((tabs) => {
-            if(tabs.length < 1) {
-                console.debug("No audible tabs.");
-                return;
+        browser.tabs.query({})
+                .then((tabs) => {
+            for(let tab of tabs) {
+                let player = this.resolvePlayer({url: tab.url});
+                if(!player) {
+                    continue;
+                }
+                this.injectPlayer({
+                    tabId: tab.id,
+                    player: player.name,
+                    url: tab.url
+                });
             }
-            //simply choose first auduble tab
-            let tab = tabs[0];
-            let player = this.resolvePlayer({url: tab.url});
-            this.injectPlayer({
-                tabId: tab.id,
-                player: player.name,
-                url: tab.url
-            });
         });
     }
 
@@ -81,13 +125,29 @@ class Daemon {
     }
 
     resolvePlayer(arg) {
-        /*if(arg.url.indexOf("music.yandex") > 0) {
-            return {name:"key_driven"};
+        let url = arg.url;
+        let rr = /https?:\/\/([^:/]+)/.exec(url);
+        if(!rr) {
+            // it happen when url looks like 'about:config'
+            return;
         }
-        if(arg.url.indexOf("pleer.net") > 0) {*/
-            return {name:"default"};
-        /*}
-        return null;//;*/
+        let domain = rr[1];
+        let data = {
+            url: url,
+            domain: domain
+        };
+        var player = null;
+        for(let site of this.sites) {
+            player = site.matcher(data);
+            if(player) {
+                break;
+            }
+        }
+        if(player) {
+            console.debug("Found player:", player, " for ", data);
+            return {name:player};
+        }
+        return null;
     }
 
     onPageChanged(e) {

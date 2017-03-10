@@ -5,15 +5,17 @@
         <meta charset="UTF-8">
     </head>
     <body>
-        <form>
-            <div>
-                List of sites and their player types. <br/>
-                Add lines like: 'domain:example.com player_type' per each site. # - comment
-            </div>
-            <textarea id="site-player-mapping" style="width:100%;height:20em"></textarea>
-            <br/>
-            <button type="submit">save</button>
-        </form>
+        
+        <div>
+            List of sites and their player types. <br/>
+            Add lines like: 'domain:example.com player_type' per each site. # - comment
+        </div>
+        <textarea id="site-player-mapping" style="width:100%;height:20em"></textarea>
+        <br/>
+        <button id="opts-save">save</button>
+        <button id="opts-clear">clear</button>
+        <script src="common.js"></script>
+        <script src="options_common.js"></script>
         <script src="options.js"></script>
     </body>
 </html>

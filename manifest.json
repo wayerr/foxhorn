@@ -30,7 +30,11 @@
     }
   },
   "background": {
-    "scripts": ["src/common.js", "src/daemon.js"]
+    "scripts": [
+        "src/common.js",
+        "src/options_common.js",
+        "src/daemon.js"
+    ]
   },
   "options_ui": {
     "page": "src/options.html"

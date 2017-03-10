@@ -1,49 +1,27 @@
 
-const opts = {
-    players: {
-        elem: "site-player-mapping",
-        def: "domain:music.yandex.ru   player_yandex\n"+
-             "#domain:example.com      player_default"
-    }
-};
-
-function forEachOpt(callback) {
-    for(let key in opts) {
-      let desc = opts[key];
-      callback(key, desc);
-  }
-}
+let opts = new Opts();
 
 function saveOptions(e) {
     e.preventDefault();
     let data = {};
-    forEachOpt((key, desc) => {
+    opts.forEach((key, desc) => {
         data[key] = document.getElementById(desc.elem).value;
     });
-    console.debug("Save opts:", data);
-    browser.storage.local.set(data);
+    opts.save(data);
 }
 
 function restoreOptions() {
 
-    function setCurrentChoice(readed) {
-        var data;
-        if(Object.keys(readed).length !== 0) {
-            data = readed;
-            console.debug("Load opts:", data);
-        } else {
-            data = {};
-            forEachOpt((key, desc) => data[key] = desc.def);
-            console.debug("Use default opts:", data);
-        }
-        forEachOpt((key, desc) => {
+    var loader = opts.load();
+    loader.then((data) => {
+        opts.forEach((key, desc) => {
             document.getElementById(desc.elem).value = data[key];
         });
-    }
-
-    var promise = browser.storage.local.get();
-    promise.then(setCurrentChoice, (e) => console.log(`Error: ${e}`));
+    });
 }
 
 document.addEventListener("DOMContentLoaded", restoreOptions);
-document.querySelector("form").addEventListener("submit", saveOptions);
+document.getElementById("opts-save").addEventListener("click", saveOptions);
+document.getElementById("opts-clear").addEventListener("click", () => {
+     browser.storage.local.clear().catch(e => {console.debug("Can not clear options:", e);});
+});
