@@ -81,7 +81,7 @@ class DefaultPlayer {
     prev() {}
     getState() {
         let media = this.media;
-        let track = {id:"track", title:document.title, duration: media.duration};
+        let track = {id:"track", title:document.title, position:0, duration: media.duration};
         return {
             paused: media.paused,
             tracks: [track]

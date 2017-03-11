@@ -20,7 +20,7 @@ class Opts {
         this.opts = {
             sites: {
                 elem: "site-player-mapping",
-                def: "domain:music.yandex.ru   yandex\n"+
+                def: "domain:music.yandex.ru   yamusic\n"+
                      "#domain:example.com      default"
             }
         };

@@ -42,9 +42,29 @@ class Popup {
     }
 
     onPlayerUpdate(data) {
+        function pf(num) {
+            let s = num.toString();
+            if(s.length < 2) {
+                return "0" + s;
+            }
+            return s;
+        }
+        function format(time) {
+            if(typeof time !== "number") {
+                return time;
+            }
+            let s = time % 60;
+            let mh = (time - s) / 60;
+            let m = mh % 60;
+            let h = (mh - m) / 60;
+            return (h? h + ":" : "") + pf(m) + ":" + pf(Math.round(s));
+        }
         console.debug("Player updated with: ", data);
+        let track = data.tracks[0];
         let ti = document.getElementById("track-title");
-        ti.innerText = data.tracks[0].title;
+        ti.innerText = track.title;
+        let td = document.getElementById("track-duration");
+        td.innerText = format(track.position) + '/' + format(track.duration);
     }
 }
 
