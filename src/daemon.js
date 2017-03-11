@@ -28,7 +28,7 @@ class Daemon {
         this.rpc = new Rpc({
             methods:{
                 "player-get": this.resolvePlayer,
-                "opts-save": this.loadOpts
+                "opts-save": this.loadOpts.bind(this)
             },
             handlers: {
                 "player-play": this.invokePlayer("player-play"),

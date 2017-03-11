@@ -25,7 +25,9 @@ class Opts {
             }
         };
         this.loader = null;
-        this.rpc = new Rpc();
+        this.rpc = new Rpc({
+            "opts-save": this.resetCache.bind(this)
+        });
     }
     
     forEach(callback) {
@@ -33,6 +35,10 @@ class Opts {
           let desc = this.opts[key];
           callback(key, desc);
       }
+    }
+
+    resetCache() {
+        this.loader = null;
     }
 
     load() {
@@ -62,7 +68,7 @@ class Opts {
 
     save(data) {
         console.debug("Save opts:", data);
-        this.loader = null;
+        this.resetCache();
         let p = browser.storage.local.set(data);
         p.catch((e) => console.log(`Can not save options: ${e}`));
         p.then(() => this.rpc.call("opts-save")());
