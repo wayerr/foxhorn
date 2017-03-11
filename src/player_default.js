@@ -46,6 +46,16 @@ class DefaultPlayer {
         this.callback = (e) => {
             content.playerUpdated();
         };
+        // api has event like PROGRESS but it too noizy, so we use simply timeout per 2 seconds
+
+        window.setInterval(() => {
+            let m = this.getMedia();
+            if(m && !m.played) {
+                // we ignore event when nothing is played
+                return;
+            }
+            content.playerUpdated();
+        }, 2000);
     }
 
     findMedia() {
