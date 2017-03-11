@@ -28,7 +28,8 @@ class Daemon {
         this.rpc = new Rpc({
             methods:{
                 "player-get": this.resolvePlayer,
-                "opts-save": this.loadOpts.bind(this)
+                "opts-save": this.loadOpts.bind(this),
+                "on-player-update": this.onPlayerUpdated.bind(this)
             },
             handlers: {
                 "player-play": this.invokePlayer("player-play"),
@@ -50,7 +51,9 @@ class Daemon {
 
         listen(browser.commands.onCommand, this.onCommand);
         listen(browser.webNavigation.onCompleted, this.onPageChanged);
-
+        if(browser.runtime.onSuspend) {//not yet supported by ff
+            listen(browser.runtime.onSuspend, this.onUnload);
+        }
     }
 
     loadOpts() {
@@ -95,6 +98,10 @@ class Daemon {
             });
         }
         this.findPlayer();
+    }
+
+    onUnload() {
+        this.rpc.call("system-unload")();
     }
 
     findPlayer() {
@@ -187,9 +194,8 @@ class Daemon {
             url: e.url
         });
     }
-
-    injectPlayer(arg) {
-        console.debug(`Inject player driver '${arg.player}' to tab '${arg.tabId}' url '${arg.url}'`);
+    
+    setCurrentPlayer(arg) {
         this.player = {
             tabId: arg.tabId,
             name: arg.player,
@@ -198,6 +204,22 @@ class Daemon {
                 return `${this.name}('${this.url}' in ${this.tabId} tab)`;
             }
         };
+    }
+
+    onPlayerUpdated(state) {
+        if(!state.tabId) {
+            return;
+        }
+        this.setCurrentPlayer({
+            tabId: state.tabId,
+            url: state.url,
+            name: ""
+        });
+    }
+
+    injectPlayer(arg) {
+        console.debug(`Inject player driver '${arg.player}' to tab '${arg.tabId}' url '${arg.url}'`);
+        this.setCurrentPlayer(arg);
 
         function executor(arr) {
             let src = arr.shift();

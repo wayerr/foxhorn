@@ -40,13 +40,14 @@ class YaMusicPlayer {
         };
         // api has event like PROGRESS but it too noizy, so we use simply timeout per 2 seconds
 
-        window.setInterval(() => {
+        let iid = window.setInterval(() => {
             if(!this.api().isPlaying()) {
                 // we ignore event when nothing is played
                 return;
             }
             content.playerUpdated();
         }, 2000);
+        content.onUnload(() => window.clearInterval(iid));
     }
 
     close() {

@@ -36,6 +36,7 @@ class Rpc {
         this._where = utils.currentScript();
         console.debug("Load rpc in ", this._where);
         this.handlers = {};
+        this.debug = false;
         
         if(arg) {
             if(arg.handlers) {
@@ -51,21 +52,30 @@ class Rpc {
                     this.addMethod(name, func);
                 }
             }
+
+            if(arg.debug) {
+                this.debug = true;
+            }
         }
 
+        this.tab = null;
         browser.runtime.onMessage.addListener(this.onMessage.bind(this));
     }
 
     onMessage(msg, sender, sendResponse) {
-        console.debug(this._where, " msg in:", msg);
+        this.debug && console.debug(this._where, " msg in:", msg);
+        if(!this.tab) {
+            // this one way to obtain current tab in content scripts
+            this.tab = sender.tab;
+        }
         let method = msg.method;
         if(!method) {
-            console.warn(this._where, `Unexpected message '${msg}' without 'method' field`);
+            console.error(this._where, `Unexpected message '${msg}' without 'method' field`);
             return;
         }
         let handler = this.handlers[method];
         if(!handler) {
-            console.warn(this._where, ` Can not find handler for method '${method}' of message:`, msg);
+            this.debug && console.warn(this._where, ` Can not find handler for method '${method}' of message:`, msg);
             return;
         }
         let arg = {
@@ -78,10 +88,10 @@ class Rpc {
 
     dispatcher(method) {
         return (arg) => {
-            console.debug(this._where, " Call of ", method, " with ", arg);
+            this.debug && console.debug(this._where, " Call of ", method, " with ", arg);
             try {
                 let res = method.apply(this, arg.args);
-                console.debug(this._where, "Call of ", method, " got ", res);
+                this.debug && console.debug(this._where, "Call of ", method, " got ", res);
                 arg.sendResponse(res);
             } catch(e) {
                 console.error(this._where, "Fail to call " , method, " due to error:", e);
@@ -96,7 +106,7 @@ class Rpc {
             return;
         }
         handler = this.dispatcher(func);
-        console.debug(this._where, `Define method '${name}'`);
+        this.debug && console.debug(this._where, `Define method '${name}'`);
         this.handlers[name] = handler;
     }
 
@@ -106,7 +116,7 @@ class Rpc {
                 method:name,
                 args: Array.from(arguments)
             };
-            console.debug(this._where, "Send message", msg);
+            this.debug && console.debug(this._where, "Send message", msg);
             let promise = browser.runtime.sendMessage(msg);
             promise.catch((e) => {
                console.error(this._where, "Error response from ", name, " : ", e);

@@ -41,12 +41,14 @@ let players = {};
 class Content {
     constructor() {
         this._player = null;
+        this.unloadCallbacks = [];
         this.rpc = new Rpc({
             methods: {
                 "player-play": this.invokePlayer("play"),
                 "player-prev": this.invokePlayer("prev"),
                 "player-next": this.invokePlayer("next"),
-                "player-get-state": this.playerUpdated.bind(this)
+                "player-get-state": this.playerUpdated.bind(this),
+                "system-unload": this.unload.bind(this)
             }
         });
     }
@@ -93,7 +95,26 @@ class Content {
 
     playerUpdated() {
         let state = this.getPlayerState();
+        let tab = this.rpc.tab;
+        if(tab) {
+            state.tabId = tab.id;
+            state.url = tab.url;
+        }
         this.rpc.call("on-player-update")(state);
+    }
+
+    unload() {
+        for(let c of this.unloadCallbacks) {
+            try {
+                c();
+            } catch (e) {
+                console.error("On unload callback:", e);
+            }
+        }
+    }
+
+    onUnload(c) {
+        this.unloadCallbacks.push(c);
     }
 }
 
