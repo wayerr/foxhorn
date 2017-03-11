@@ -24,30 +24,34 @@ class YaMusicPlayer {
     constructor() {
         this.listener = cloneInto(() => {
             content.playerUpdated();
-        }, window.wrappedJSObject, {cloneFunctions:true});
+        }, content.unwrap(window), {cloneFunctions:true});
         this._api = null;
-        this.api = () => {
-            let api = window.wrappedJSObject.externalAPI;
-            if(this._api !== api) {
-                this.unsubscribe();
-                if(api !== null) {
-                    api.on(api.EVENT_STATE, this.listener);
-                    api.on(api.EVENT_TRACK, this.listener);
-                }
-            }
-            this._api = api;
-            return api;
-        };
         // api has event like PROGRESS but it too noizy, so we use simply timeout per 2 seconds
-
         let iid = window.setInterval(() => {
-            if(!this.api().isPlaying()) {
+            let api = this.api();
+            if(!api || !api.isPlaying()) {
                 // we ignore event when nothing is played
                 return;
             }
             content.playerUpdated();
         }, 2000);
-        content.onUnload(() => window.clearInterval(iid));
+        content.onUnload(() => {
+            this.close();
+            window.clearInterval(iid);
+        });
+    }
+
+    api() {
+        let api = content.unwrap(window).externalAPI;
+        if(this._api !== api) {
+            this.unsubscribe();
+            if(api) {
+                api.on(api.EVENT_STATE, this.listener);
+                api.on(api.EVENT_TRACK, this.listener);
+            }
+        }
+        this._api = api;
+        return api;
     }
 
     close() {
@@ -55,7 +59,7 @@ class YaMusicPlayer {
     }
 
     unsubscribe() {
-        if(this._api !== null) {
+        if(this._api) {
             this._api.off(this._api.EVENT_STATE, this.listener);
             this._api.off(this._api.EVENT_TRACK, this.listener);
         }
@@ -63,6 +67,9 @@ class YaMusicPlayer {
 
     play() {
         let api = this.api();
+        if(!api) {
+            return;
+        }
         let p = api.getProgress();
         if(api.isPlaying() || p.position > 0) {
             api.togglePause();
@@ -81,6 +88,9 @@ class YaMusicPlayer {
 
     getState() {
         let api = this.api();
+        if(!api) {
+            return {paused:true, tracks: []};
+        }
         let ct = api.getCurrentTrack();
         let p = api.getProgress();
         let album = ct.album.title || '<unknown>';

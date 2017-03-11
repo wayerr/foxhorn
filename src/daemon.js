@@ -105,7 +105,7 @@ class Daemon {
     }
 
     findPlayer() {
-        browser.tabs.query({})
+        compat.p(browser.tabs.query, {})
                 .then((tabs) => {
             for(let tab of tabs) {
                 let player = this.resolvePlayer({url: tab.url});
@@ -143,7 +143,7 @@ class Daemon {
             };
             let proxy = arg.sendResponse;
             console.debug("Send msg ", msg, ` to ${player}`);
-            browser.tabs.sendMessage(player.tabId, msg)
+            compat.p(browser.tabs.sendMessage, player.tabId, msg)
                .then(proxy, (e) => console.error(`On send '${method}' to content we got error: ${e}`));
         };
     }
@@ -224,7 +224,7 @@ class Daemon {
         function executor(arr) {
             let src = arr.shift();
             console.debug("Execute ", src, " in ", arg.tabId);
-            let promise = browser.tabs.executeScript(arg.tabId, {file: src, runAt:"document_start"});
+            let promise = compat.p(browser.tabs.executeScript, arg.tabId, {file: src, runAt:"document_start"});
             promise.catch((e) => console.error('On exec ', src, ' we got error:', e));
             if(arr.length > 0) {
                 promise.then(() => executor(arr));

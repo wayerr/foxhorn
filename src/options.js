@@ -39,5 +39,5 @@ function restoreOptions() {
 document.addEventListener("DOMContentLoaded", restoreOptions);
 document.getElementById("opts-save").addEventListener("click", saveOptions);
 document.getElementById("opts-clear").addEventListener("click", () => {
-     browser.storage.local.clear().catch(e => {console.debug("Can not clear options:", e);});
+     compat.p(browser.storage.local.clear).catch(e => {console.debug("Can not clear options:", e);});
 });

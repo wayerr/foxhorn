@@ -15,6 +15,42 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+//workaround for chrome
+var _z = this;
+let compat = new (function(){
+    var isChrome = !!_z["chrome"];
+    if(!_z["browser"] && isChrome) {
+        browser = chrome;
+    }
+    this.p = function(/*func, ...args*/) {
+        let args = Array.from(arguments);
+        let func = args.shift();
+        if(!isChrome) {
+            return func.apply(null, args);
+        }
+        let handlers = {};
+        let p = new Promise((resolve, reject) => {
+            handlers.resolve = resolve;
+            handlers.reject = resolve;
+        });
+        let cb = function() {
+            let err = chrome.runtime.lastError;
+            if(err) {
+                handlers.reject(err);
+                return;
+            }
+            let cbargs = Array.from(arguments);
+            //console.debug("CBARGS:", JSON.stringify(cbargs));
+            handlers.resolve.apply(null, cbargs);
+        };
+        args.push(cb);
+        func.apply(null, args);
+        return p;
+    };
+})();
+
+delete this._z;
+
 let utils = {
     currentScript: () => {
         var text = null;
@@ -117,7 +153,7 @@ class Rpc {
                 args: Array.from(arguments)
             };
             this.debug && console.debug(this._where, "Send message", msg);
-            let promise = browser.runtime.sendMessage(msg);
+            let promise = compat.p(browser.runtime.sendMessage, msg);
             promise.catch((e) => {
                console.error(this._where, "Error response from ", name, " : ", e);
             });

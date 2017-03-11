@@ -20,7 +20,7 @@ class DefaultPlayer {
     static factory() {
         let player = new DefaultPlayer();
         console.debug("Begin create proxy");
-        let w = window.wrappedJSObject;
+        let w = content.unwrap(window);
         let handler = {
             construct: (target, argumentsList, newTarget) => {
                 try {

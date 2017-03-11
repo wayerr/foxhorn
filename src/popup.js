@@ -19,9 +19,9 @@ document.addEventListener("click", (e) => {
     let id = e.target.id;
     if(id) {
         if("open-options" === id) {
-            browser.runtime.openOptionsPage();
+            compat.p(browser.runtime.openOptionsPage);
         } else {
-            browser.runtime.sendMessage({method:id}).then(null, (e) => console.error(`On '${id}' got error: ${e}`));
+            compat.p(browser.runtime.sendMessage, {method:id}).then(null, (e) => console.error(`On '${id}' got error: ${e}`));
         }
     }
     e.preventDefault();

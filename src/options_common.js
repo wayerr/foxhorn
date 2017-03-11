@@ -57,7 +57,7 @@ class Opts {
                 resolve(data);
             };
 
-            var p = browser.storage.local.get();
+            var p = compat.p(browser.storage.local.get);
             p.catch((e) => {
                 console.log(`Can not load options: ${e}`);
                 //then use defaults
@@ -70,7 +70,7 @@ class Opts {
     save(data) {
         console.debug("Save opts:", data);
         this.resetCache();
-        let p = browser.storage.local.set(data);
+        let p = compat.p(browser.storage.local.set, data);
         p.catch((e) => console.log(`Can not save options: ${e}`));
         p.then(() => this.rpc.call("opts-save")());
     }

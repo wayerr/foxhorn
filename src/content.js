@@ -36,7 +36,11 @@ class Player {
     }
 }*/
 
-let players = {};
+if(!this["cloneInto"]) {
+    cloneInto = (obj, win, arg) => {
+        return obj;
+    };
+}
 
 class Content {
     constructor() {
@@ -115,6 +119,11 @@ class Content {
 
     onUnload(c) {
         this.unloadCallbacks.push(c);
+    }
+
+    unwrap(o) {
+        // chrome deos not support 'wrappedJSObject'
+        return o.wrappedJSObject || o;
     }
 }
 
