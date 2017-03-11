@@ -21,6 +21,7 @@ class Opts {
             sites: {
                 elem: "site-player-mapping",
                 def: "domain:music.yandex.ru   yamusic\n"+
+                     "domain:www.youtube.com   default\n"+
                      "#domain:example.com      default"
             }
         };

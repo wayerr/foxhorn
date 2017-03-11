@@ -17,17 +17,7 @@
 
 class DefaultPlayer {
 
-    static factory() {/*
-        var items = [];
-        let forEachTag = (tag, handler) => Array.prototype.forEach.call(document.getElementsByTagName(tag), handler);
-        forEachTag("audio", (a) => items.push(a));
-        forEachTag("video", (a) => items.push(a));
-        // we can not support cases when page contains many media elements
-        if(items.length !== 1) {
-            console.error("Too many media on page:", items);
-            return;
-        }
-        return new DefaultPlayer(items[0]);*/
+    static factory() {
         let player = new DefaultPlayer();
         console.debug("Begin create proxy");
         let w = window.wrappedJSObject;
@@ -40,11 +30,6 @@ class DefaultPlayer {
                         console.debug("Change player due to 'play' event:", e);
                         player.setMedia(e.target);
                     });
-                    let callback = (e) => {
-                        content.playerUpdated();
-                    };
-                    res.addEventListener("changed", callback);
-                    res.addEventListener("load", callback);
                     player.setMedia(res);
                     return res;
                 } catch (e) {
@@ -58,40 +43,73 @@ class DefaultPlayer {
     }
 
     constructor() {
+        this.callback = (e) => {
+            content.playerUpdated();
+        };
+    }
 
-        
+    findMedia() {
+        var items = [];
+        let forEachTag = (tag, handler) => Array.prototype.forEach.call(document.getElementsByTagName(tag), handler);
+        forEachTag("audio", (a) => items.push(a));
+        forEachTag("video", (a) => items.push(a));
+        // we can not support cases when page contains many media elements
+        if(items.length !== 1) {
+            console.debug("Too many media on page:", items);
+            return;
+        }
+        this._media = items[0];
+    }
+
+    getMedia() {
+        if(!this._media) {
+            this.findMedia();
+        }
+        return this._media;
     }
 
     play() {
-        console.debug("PLAY{");
-        if(!this.media) {
+        let m = this.getMedia();
+        if(!m) {
             return;
         }
-        if(this.media.paused) {
-            this.media.play();
+        if(m.paused) {
+            m.play();
         } else {
-            this.media.pause();
+            m.pause();
         }
-        console.debug("}");
     }
-    pause() {
-        this.media.pause();
-    }
+
     next() {}
+
     prev() {}
+
     getState() {
-        let media = this.media;
-        let track = {id:"track", title:document.title, position:0, duration: media.duration};
+        let media = this.getMedia();
+        let track = {
+            id:"track",
+            title:document.title,
+            position: media.currentTime,
+            duration: media.duration
+        };
         return {
             paused: media.paused,
             tracks: [track]
         };
     }
+    
     setMedia(newmedia) {
-        if(this.media === newmedia) {
+        if(this._media === newmedia) {
             return;
         }
-        this.media = newmedia;
+        let old = this._media;
+        if(old) {
+            old.removeEventListener("changed", this.callback);
+            old.removeEventListener("load", this.callback);
+        }
+        this._media = newmedia;
+        newmedia.addEventListener("changed", this.callback);
+        newmedia.addEventListener("load", this.callback);
         content.playerUpdated();
     }
 }
