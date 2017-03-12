@@ -41,7 +41,7 @@ class Content {
             if (!msg.foxhorn || msg.fromContent) {
                 return;
             }
-            console.debug("Content receive: ", msg);
+            //console.debug("Content receive: ", msg);
             let method = msg.method;
             //let response = msg.response;
             if(method === "on-player-update") {

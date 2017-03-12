@@ -71,7 +71,7 @@ let foxhorn = new (function(){
       if (!msg.foxhorn) {
           return;
       }
-      console.log("Player receive: " + msg);
+      //console.debug("Player receive: ", msg);
       let method = msg.method;
       let response = msg.response;
       let func = player[method];
@@ -83,5 +83,5 @@ let foxhorn = new (function(){
       if(response) {
           send(response, [res]);
       }
-    }.bind(this), false);
+    }.bind(this));
 })();
