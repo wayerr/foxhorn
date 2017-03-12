@@ -15,32 +15,8 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-/*
- * iface of player
-class Player {
-    play() {}
-    next() {}
-    prev() {}
-    getState() {
-        return {
-            paused:false,
-            // max tracks - 10
-            // each track: {id:obj, title:"text", duration: 213454 /seconds/}
-            //
-            // list of tracks is not required
-            tracks: [
-                {track},
-                {track}
-            ]
-        };
-    }
-}*/
-
-if(!this["cloneInto"]) {
-    cloneInto = (obj, win, arg) => {
-        return obj;
-    };
-}
+const ID_PLAYER_COMMON = "foxhorn_player_common";
+const ID_PLAYER = "foxhorn_player_agent";
 
 class Content {
     constructor() {
@@ -51,54 +27,61 @@ class Content {
                 "player-play": this.invokePlayer("play"),
                 "player-prev": this.invokePlayer("prev"),
                 "player-next": this.invokePlayer("next"),
-                "player-get-state": this.playerUpdated.bind(this),
-                "system-unload": this.unload.bind(this)
+                "player-get-state": this.invokePlayer("getState"),
+                "player-install": this.installPlayer.bind(this),
+                "system-unload": this.close.bind(this)
             }
         });
-    }
 
-    getPlayer() {
-        return this._player;
-    }
-
-    init() {
-    }
-
-    initPlayer(player) {
-        console.debug("Use player type :", player);
-        if(player) {
-            this._player = player.factory();
-            console.debug("Make player: ", this._player);
-        }
+        this.onDomMessage = function(event) {
+            if (event.source !== window) {
+                return;
+            }
+            let msg = event.data;
+            if (!msg.foxhorn || msg.fromContent) {
+                return;
+            }
+            console.debug("Content receive: ", msg);
+            let method = msg.method;
+            //let response = msg.response;
+            if(method === "on-player-update") {
+                this.playerUpdated.apply(this, msg.args);
+            }
+        }.bind(this);
+        window.addEventListener("message", this.onDomMessage);
     }
 
     invokePlayer(name) {
         return () => {
-            let player = this.getPlayer();
-            var res = null;
-            if(player) {
-                let func = player[name];
-                if(func) {
-                    res = func.apply(player);
-                } else {
-                    console.error(`No '${name}' in player: ${player}`);
-                }
-            } else {
-                console.warn('No initialised player');
-            }
-            return res;
+            let msg = {
+                foxhorn:true,
+                fromContent: true,
+                method: name,
+                args: Array.from(arguments)
+            };
+            window.postMessage(msg, "*");
         };
     }
 
-    getPlayerState() {
-        if(!this._player) {
-            return null;
+    installPlayer(playerName) {
+        console.debug(`Begin install player ${playerName}.`);
+        function addScript(id, script) {
+            try {
+                let scr = document.createElement("script");
+                scr.id = id;
+                let source = browser.runtime.getURL(script);
+                scr.src = source;
+                scr.setAttribute("type", "text/javascript");
+                document.head.appendChild(scr);
+            } catch (e) {
+                console.error(`Can not install ${id} from: ${script}, due to error:`, e);
+            }
         }
-        return this._player.getState();
+        addScript(ID_PLAYER_COMMON, `src/player/_common.js`);
+        addScript(ID_PLAYER, `src/player/${playerName}.js`);
     }
 
-    playerUpdated() {
-        let state = this.getPlayerState();
+    playerUpdated(state) {
         let tab = this.rpc.tab;
         if(tab) {
             state.tabId = tab.id;
@@ -107,28 +90,19 @@ class Content {
         this.rpc.call("on-player-update")(state);
     }
 
-    unload() {
-        for(let c of this.unloadCallbacks) {
-            try {
-                c();
-            } catch (e) {
-                console.error("On unload callback:", e);
+    close() {
+        window.removeEventListener("message", this.onDomMessage);
+        function clearNode(id) {
+            let scr = document.getElementById(id);
+            if(scr) {
+                scr.parentNode.removeChild(scr);
             }
         }
-    }
-
-    onUnload(c) {
-        this.unloadCallbacks.push(c);
-    }
-
-    unwrap(o) {
-        // chrome deos not support 'wrappedJSObject'
-        return o.wrappedJSObject || o;
+        clearNode(ID_PLAYER_COMMON);
+        clearNode(ID_PLAYER);
     }
 }
 
 console.debug('Begin content init');
-content = new Content();
-
-content.init();
+let content = new Content();
 console.debug('Content inited');

@@ -51,9 +51,8 @@ class Daemon {
 
         listen(browser.commands.onCommand, this.onCommand);
         listen(browser.webNavigation.onCompleted, this.onPageChanged);
-        if(browser.runtime.onSuspend) {//not yet supported by ff
-            listen(browser.runtime.onSuspend, this.onUnload);
-        }
+        
+        window.addEventListener("unload", this.onUnload);
     }
 
     loadOpts() {
@@ -101,6 +100,8 @@ class Daemon {
     }
 
     onUnload() {
+        console.debug("Begin unload");
+        window.removeEventListener("unload", this.onUnload);
         this.rpc.call("system-unload")();
     }
 
@@ -130,6 +131,15 @@ class Daemon {
         }
     }
 
+    sendToTab(tabId, method, args) {
+        let msg = {
+            method: method,
+            args: args
+        };
+        return compat.p(browser.tabs.sendMessage, tabId, msg)
+           .catch((e) => console.error(`On send '${method}' to content we got error: ${e}`));
+    }
+
     invokePlayer(method) {
         return (arg) => {
             let player = this.player;
@@ -137,14 +147,9 @@ class Daemon {
                 console.debug("no tab in player:", player);
                 return;
             }
-            let msg = {
-                method: method,
-                arg: arg.arg
-            };
-            let proxy = arg.sendResponse;
-            console.debug("Send msg ", msg, ` to ${player}`);
-            compat.p(browser.tabs.sendMessage, player.tabId, msg)
-               .then(proxy, (e) => console.error(`On send '${method}' to content we got error: ${e}`));
+            console.debug(`Invoke ${player}.${method}()`);
+            this.sendToTab(player.tabId, method, [arg.arg])
+                    .then(arg.sendResponse);
         };
     }
 
@@ -221,16 +226,21 @@ class Daemon {
         console.debug(`Inject player driver '${arg.player}' to tab '${arg.tabId}' url '${arg.url}'`);
         this.setCurrentPlayer(arg);
 
-        function executor(arr) {
+        function executor(arr, cb) {
             let src = arr.shift();
             console.debug("Execute ", src, " in ", arg.tabId);
             let promise = compat.p(browser.tabs.executeScript, arg.tabId, {file: src, runAt:"document_start"});
             promise.catch((e) => console.error('On exec ', src, ' we got error:', e));
             if(arr.length > 0) {
-                promise.then(() => executor(arr));
+                promise.then(() => executor(arr, cb));
+            } else {
+                promise.then(cb);
             }
         };
-        executor(["src/common.js", "src/content.js", `src/player_${arg.player}.js`]);
+        executor(["src/common.js", "src/content.js"], () => {
+            console.debug(`Send install command to ${arg.tabId}.`);
+            this.sendToTab(arg.tabId, "player-install", [arg.player]);
+        });
     }
 }
 

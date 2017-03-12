@@ -17,32 +17,24 @@
 
 class YaMusicPlayer {
 
-    static factory() {
-        return new YaMusicPlayer();
-    }
-
     constructor() {
-        this.listener = cloneInto(() => {
-            content.playerUpdated();
-        }, content.unwrap(window), {cloneFunctions:true});
+        this.listener = () => {
+            foxhorn.playerUpdated();
+        };
         this._api = null;
         // api has event like PROGRESS but it too noizy, so we use simply timeout per 2 seconds
-        let iid = window.setInterval(() => {
+        this.iid = window.setInterval(() => {
             let api = this.api();
             if(!api || !api.isPlaying()) {
                 // we ignore event when nothing is played
                 return;
             }
-            content.playerUpdated();
+            foxhorn.playerUpdated();
         }, 2000);
-        content.onUnload(() => {
-            this.close();
-            window.clearInterval(iid);
-        });
     }
 
     api() {
-        let api = content.unwrap(window).externalAPI;
+        let api = externalAPI;
         if(this._api !== api) {
             this.unsubscribe();
             if(api) {
@@ -55,6 +47,7 @@ class YaMusicPlayer {
     }
 
     close() {
+        window.clearInterval(this.iid);
         this.unsubscribe();
     }
 
@@ -108,4 +101,4 @@ class YaMusicPlayer {
     }
 };
 
-content.initPlayer(YaMusicPlayer);
+foxhorn.setPlayer(new YaMusicPlayer());

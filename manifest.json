@@ -51,5 +51,8 @@
     "webNavigation",
     "<all_urls>",
     "storage"
+  ],
+  "web_accessible_resources": [
+    "src/player/*.js"
   ]
 }
