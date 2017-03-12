@@ -21,11 +21,11 @@ class DefaultPlayer {
         this.callback = (e) => {
             content.playerUpdated();
         };
-        // api has event like PROGRESS but it too noizy, so we use simply timeout per 2 seconds
+        // api has event too noizy, so we use simply timeout per 2 seconds
 
         this.iid = window.setInterval(() => {
             let m = this.getMedia();
-            if(m && !m.played) {
+            if(!m || !m.played) {
                 // we ignore event when nothing is played
                 return;
             }
@@ -41,7 +41,7 @@ class DefaultPlayer {
         forEachTag("video", (a) => items.push(a));
         // we can not support cases when page contains many media elements
         if(items.length !== 1) {
-            console.debug("Too many media on page:", items);
+            console.debug("Can not resolve media on page:", items);
             return;
         }
         this._media = items[0];
@@ -72,6 +72,9 @@ class DefaultPlayer {
 
     getState() {
         let media = this.getMedia();
+        if(!media) {
+            return {paused:true, tracks: []};
+        }
         let track = {
             id:"track",
             title:document.title,
