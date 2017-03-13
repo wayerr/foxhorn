@@ -17,6 +17,7 @@
 
 const ID_PLAYER_COMMON = "foxhorn_player_common";
 const ID_PLAYER = "foxhorn_player_agent";
+const EV_PLAYER_UPDATE = "on-player-update";
 
 class Content {
     constructor() {
@@ -27,7 +28,7 @@ class Content {
                 "player-play": this.invokePlayer("play"),
                 "player-prev": this.invokePlayer("prev"),
                 "player-next": this.invokePlayer("next"),
-                "player-get-state": this.invokePlayer("getState"),
+                "player-get-state": this.invokePlayer("getState", EV_PLAYER_UPDATE),
                 "player-install": this.installPlayer.bind(this),
                 "system-unload": this.close.bind(this)
             }
@@ -44,21 +45,26 @@ class Content {
             //console.debug("Content receive: ", msg);
             let method = msg.method;
             //let response = msg.response;
-            if(method === "on-player-update") {
+            if(method === EV_PLAYER_UPDATE) {
                 this.playerUpdated.apply(this, msg.args);
             }
         }.bind(this);
         window.addEventListener("message", this.onDomMessage);
     }
 
-    invokePlayer(name) {
+    invokePlayer(name, to) {
         return () => {
+            let args = Array.from(arguments);
+            args.shift();
             let msg = {
                 foxhorn:true,
                 fromContent: true,
                 method: name,
-                args: Array.from(arguments)
+                args: args
             };
+            if(to) {
+                msg.response = to;
+            }
             window.postMessage(msg, "*");
         };
     }

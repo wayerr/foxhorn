@@ -15,90 +15,92 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-class YaMusicPlayer {
+{
+    class YaMusicPlayer {
 
-    constructor() {
-        this.listener = () => {
-            foxhorn.playerUpdated();
-        };
-        this._api = null;
-        // api has event like PROGRESS but it too noizy, so we use simply timeout per 2 seconds
-        this.iid = window.setInterval(() => {
+        constructor() {
+            this.listener = () => {
+                foxhorn.playerUpdated();
+            };
+            this._api = null;
+            // api has event like PROGRESS but it too noizy, so we use simply timeout per 2 seconds
+            this.iid = window.setInterval(() => {
+                let api = this.api();
+                if(!api || !api.isPlaying()) {
+                    // we ignore event when nothing is played
+                    return;
+                }
+                foxhorn.playerUpdated();
+            }, 2000);
+        }
+
+        api() {
+            let api = externalAPI;
+            if(this._api !== api) {
+                this.unsubscribe();
+                if(api) {
+                    api.on(api.EVENT_STATE, this.listener);
+                    api.on(api.EVENT_TRACK, this.listener);
+                }
+            }
+            this._api = api;
+            return api;
+        }
+
+        close() {
+            window.clearInterval(this.iid);
+            this.unsubscribe();
+        }
+
+        unsubscribe() {
+            if(this._api) {
+                this._api.off(this._api.EVENT_STATE, this.listener);
+                this._api.off(this._api.EVENT_TRACK, this.listener);
+            }
+        }
+
+        play() {
             let api = this.api();
-            if(!api || !api.isPlaying()) {
-                // we ignore event when nothing is played
+            if(!api) {
                 return;
             }
-            foxhorn.playerUpdated();
-        }, 2000);
-    }
-
-    api() {
-        let api = externalAPI;
-        if(this._api !== api) {
-            this.unsubscribe();
-            if(api) {
-                api.on(api.EVENT_STATE, this.listener);
-                api.on(api.EVENT_TRACK, this.listener);
+            let p = api.getProgress();
+            if(api.isPlaying() || p.position > 0) {
+                api.togglePause();
+            } else {
+                api.play();
             }
         }
-        this._api = api;
-        return api;
-    }
 
-    close() {
-        window.clearInterval(this.iid);
-        this.unsubscribe();
-    }
-
-    unsubscribe() {
-        if(this._api) {
-            this._api.off(this._api.EVENT_STATE, this.listener);
-            this._api.off(this._api.EVENT_TRACK, this.listener);
+        next() {
+            this.api().next();
         }
-    }
 
-    play() {
-        let api = this.api();
-        if(!api) {
-            return;
+        prev() {
+            this.api().prev();
         }
-        let p = api.getProgress();
-        if(api.isPlaying() || p.position > 0) {
-            api.togglePause();
-        } else {
-            api.play();
+
+        getState() {
+            let api = this.api();
+            if(!api) {
+                return {paused:true, tracks: []};
+            }
+            let ct = api.getCurrentTrack();
+            let p = api.getProgress();
+            let album = ct.album.title || '<unknown>';
+            let artist = ct.album.artists && ct.album.artists[0].title || '<unknown>';
+            let track = {
+                id:"track",
+                title:`${ct.title} - ${album} - ${artist}`,
+                position: p.position,
+                duration: p.duration
+            };
+            return {
+                paused: !api.isPlaying(),
+                tracks: [track]
+            };
         }
-    }
+    };
 
-    next() {
-        this.api().next();
-    }
-
-    prev() {
-        this.api().prev();
-    }
-
-    getState() {
-        let api = this.api();
-        if(!api) {
-            return {paused:true, tracks: []};
-        }
-        let ct = api.getCurrentTrack();
-        let p = api.getProgress();
-        let album = ct.album.title || '<unknown>';
-        let artist = ct.album.artists && ct.album.artists[0].title || '<unknown>';
-        let track = {
-            id:"track",
-            title:`${ct.title} - ${album} - ${artist}`,
-            position: p.position,
-            duration: p.duration
-        };
-        return {
-            paused: !api.isPlaying(),
-            tracks: [track]
-        };
-    }
-};
-
-foxhorn.setPlayer(new YaMusicPlayer());
+    foxhorn.setPlayer(new YaMusicPlayer());
+}

@@ -43,7 +43,15 @@ class Player {
  */
 
 console.debug("Inject foxhorn.");
-let foxhorn = new (function(){
+// it must be redeclarable for reloading script
+if(foxhorn) {
+    try {
+        foxhorn.close();
+    } catch (e) {
+        console.error("On close redeclarated 'foxhorn':", e);
+    }
+}
+var foxhorn = new (function(){
     var player = null;
     function send(to, args) {
         window.postMessage({
@@ -63,12 +71,12 @@ let foxhorn = new (function(){
         player = p;
         this.playerUpdated();
     }.bind(this);
-    window.addEventListener("message", function(event) {
+    let windowListener = function(event) {
       if (event.source !== window || !player) {
         return;
       }
       let msg = event.data;
-      if (!msg.foxhorn) {
+      if (!msg.foxhorn || !msg.fromContent) {
           return;
       }
       //console.debug("Player receive: ", msg);
@@ -76,6 +84,7 @@ let foxhorn = new (function(){
       let response = msg.response;
       let func = player[method];
       if(!func) {
+          console.warn("Can not find handler for: ", method, " in ", Object.keys(player));
           return;
       }
 
@@ -83,5 +92,11 @@ let foxhorn = new (function(){
       if(response) {
           send(response, [res]);
       }
-    }.bind(this));
+    }.bind(this);
+    window.addEventListener("message", windowListener);
+
+    this.close = () => {
+        window.removeEventListener("message", windowListener);
+        player.close();
+    };
 })();
