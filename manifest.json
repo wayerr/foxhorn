@@ -5,14 +5,14 @@
   "homepage_url": "https://github.com/wayerr/foxhorn",
   "manifest_version": 2,
   "icons": {
-    "32": "icons/logo-32.png"
+    "48": "icons/logo-48.png"
   },
   "browser_action": {
     "browser_style": true,
     "default_title": "FoxHorn",
     "default_popup": "src/popup.html",
     "default_icon": {
-      "32": "icons/logo-32.png"
+      "48": "icons/logo-48.png"
     }
   },
   "commands": {
