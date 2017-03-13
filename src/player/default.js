@@ -41,10 +41,10 @@
                         let res = Reflect.construct(target, argumentsList);
                         console.debug("New audio created: ", res);
                         res.addEventListener("play", (e) => {
-                            console.debug("Change player due to 'play' event:", e);
-                            player.setMedia(e.target);
+                            console.debug("Change player due to 'play' event to: ", e.target);
+                            this.setMedia(e.target);
                         });
-                        player.setMedia(res);
+                        this.setMedia(res);
                         return res;
                     } catch (e) {
                         console.debug("Cannot create", e);
@@ -80,6 +80,7 @@
             if(!m) {
                 return;
             }
+            console.debug("PLAY");
             if(m.paused) {
                 m.play();
             } else {
