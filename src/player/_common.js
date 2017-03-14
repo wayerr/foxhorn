@@ -102,6 +102,10 @@ var foxhorn = new (function(){
         player = p;
         this.playerUpdated();
     }.bind(this);
+    this.getPlayer = function() {
+        // it need only for debugging
+        return player;
+    }.bind(this);
     let windowListener = function(event) {
       if (event.source !== window || !player) {
         return;
