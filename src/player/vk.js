@@ -59,7 +59,8 @@
         }
 
         hasMedia() {
-            return ap.getCurrentAudio() !== null;
+            // getCurrentAudio - return false when no media, or [] - when exists
+            return !!ap.getCurrentAudio();
         }
 
         getTrack() {
