@@ -22,16 +22,6 @@
             this.callback = (e) => {
                 content.playerUpdated();
             };
-            // api has event too noizy, so we use simply timeout per 2 seconds
-
-            this.iid = window.setInterval(() => {
-                let m = this.getMedia();
-                if(!m || !m.played) {
-                    // we ignore event when nothing is played
-                    return;
-                }
-                foxhorn.playerUpdated();
-            }, 2000);
 
             console.debug("Begin create proxy");
             this._audio = Audio;
@@ -80,7 +70,6 @@
             if(!m) {
                 return;
             }
-            console.debug("PLAY");
             if(m.paused) {
                 m.play();
             } else {
@@ -92,20 +81,30 @@
 
         prev() {}
 
-        getState() {
-            let media = this.getMedia();
-            if(!media) {
-                return {paused:true, tracks: []};
+
+        getProgress() {
+            let m = this.getMedia();
+            if(!m) {
+                return 0;
             }
-            let track = {
+            return m.duration / m.currentTime;
+        }
+
+        isPlaying() {
+            return this.getMedia().paused;
+        }
+
+        hasMedia() {
+            return this.getMedia() !== null;
+        }
+
+        getTrack() {
+            let media = this.getMedia();
+            return {
                 id:"track",
                 title:document.title,
                 position: media.currentTime,
                 duration: media.duration
-            };
-            return {
-                paused: media.paused,
-                tracks: [track]
             };
         }
 
@@ -121,7 +120,6 @@
             if(this._audio) {
                 Audio = this._audio;
             }
-            window.clearInterval(this.iid);
             this.unsubscribe();
         }
 

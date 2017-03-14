@@ -60,11 +60,13 @@ class Popup {
             return (h? h + ":" : "") + pf(m) + ":" + pf(Math.round(s));
         }
         console.debug("Player updated with: ", data);
-        let track = data.tracks[0];
-        let ti = document.getElementById("track-title");
-        ti.innerText = track.title;
-        let td = document.getElementById("track-duration");
-        td.innerText = format(track.position) + '/' + format(track.duration);
+        let track = data;
+        if(track) {
+            let ti = document.getElementById("track-title");
+            ti.innerText = track.title;
+            let td = document.getElementById("track-duration");
+            td.innerText = format(track.position) + '/' + format(track.duration);
+        }
     }
 }
 

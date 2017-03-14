@@ -28,7 +28,7 @@ class Content {
                 "player-play": this.invokePlayer("play"),
                 "player-prev": this.invokePlayer("prev"),
                 "player-next": this.invokePlayer("next"),
-                "player-get-state": this.invokePlayer("getState", EV_PLAYER_UPDATE),
+                "player-get-state": this.invokePlayer("getTrack", EV_PLAYER_UPDATE),
                 "player-install": this.installPlayer.bind(this),
                 "system-unload": this.close.bind(this)
             }

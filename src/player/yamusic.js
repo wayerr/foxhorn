@@ -22,82 +22,59 @@
             this.listener = () => {
                 foxhorn.playerUpdated();
             };
-            this._api = null;
-            // api has event like PROGRESS but it too noizy, so we use simply timeout per 2 seconds
-            this.iid = window.setInterval(() => {
-                let api = this.api();
-                if(!api || !api.isPlaying()) {
-                    // we ignore event when nothing is played
-                    return;
-                }
-                foxhorn.playerUpdated();
-            }, 2000);
+            externalAPI.on(externalAPI.EVENT_STATE, this.listener);
+            externalAPI.on(externalAPI.EVENT_TRACK, this.listener);
         }
 
-        api() {
-            let api = externalAPI;
-            if(this._api !== api) {
-                this.unsubscribe();
-                if(api) {
-                    api.on(api.EVENT_STATE, this.listener);
-                    api.on(api.EVENT_TRACK, this.listener);
-                }
-            }
-            this._api = api;
-            return api;
-        }
 
         close() {
-            window.clearInterval(this.iid);
-            this.unsubscribe();
-        }
-
-        unsubscribe() {
-            if(this._api) {
-                this._api.off(this._api.EVENT_STATE, this.listener);
-                this._api.off(this._api.EVENT_TRACK, this.listener);
-            }
+            externalAPI.off(externalAPI.EVENT_STATE, this.listener);
+            externalAPI.off(externalAPI.EVENT_TRACK, this.listener);
         }
 
         play() {
-            let api = this.api();
-            if(!api) {
-                return;
-            }
-            let p = api.getProgress();
-            if(api.isPlaying() || p.position > 0) {
-                api.togglePause();
+            let p = externalAPI.getProgress();
+            if(externalAPI.isPlaying() || p.position > 0) {
+                externalAPI.togglePause();
             } else {
-                api.play();
+                externalAPI.play();
             }
         }
 
         next() {
-            this.api().next();
+            externalAPI.next();
         }
 
         prev() {
-            this.api().prev();
+            externalAPI.prev();
+        }
+        
+        getProgress() {
+            let p = externalAPI.getProgress();
+            if(!p) {
+                return 0;
+            }
+            return p.duration / p.postion;
         }
 
-        getState() {
-            let api = this.api();
-            if(!api) {
-                return {paused:true, tracks: []};
-            }
-            let ct = api.getCurrentTrack();
-            let p = api.getProgress();
+        isPlaying() {
+            return externalAPI.isPlaying();
+        }
+
+        hasMedia() {
+            return externalAPI.getCurrentTrack() !== null;
+        }
+
+        getTrack() {
+            let ct = externalAPI.getCurrentTrack();
+            let p = externalAPI.getProgress();
             let album = ct.album.title || '<unknown>';
             let artist = ct.album.artists && ct.album.artists[0].title || '<unknown>';
-            let track = {
+            return {
                 id:"track",
                 title:`${ct.title} - ${album} - ${artist}`,
                 position: p.position,
                 duration: p.duration
-            };
-            return {
-                paused: !api.isPlaying(),
-                tracks: [track]
             };
         }
     };

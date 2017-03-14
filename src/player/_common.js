@@ -25,19 +25,20 @@ class Player {
     play() {}
     next() {}
     prev() {}
-    getState() {
+    // player has played or paused media, when false - all non lifecycle methods will never been called
+    hasMedia() {}
+    isPlaying() {} 
+    getProgress() {} // value 0 - 1, which is meaning part of played time
+    getTrack() {
         return {
-            paused:false,
-            // max tracks - 10
-            // each track: {id:obj, title:"text", duration: 213454 /seconds/}
-            //
-            // list of tracks is not required
-            tracks: [
-                {track},
-                {track}
-            ]
+            id:obj,
+            title:"text",
+            position: 23144, /seconds/
+            duration: 213454 /seconds/
         };
     }
+//lifecycle methods
+    open() {}
     close() {} //used for clear player resource before unload
 }
  */
@@ -60,8 +61,31 @@ var foxhorn = new (function(){
               args: args
         }, "*");
     }
+    function safeCall(func, thiz) {
+        try {
+            let args = Array.from(arguments).slice(2);
+            return func.apply(thiz, args);
+        } catch (e) {
+            console.error("Call of ", thiz, ".", func, " return error: ", e);
+        }
+    }
+    let intervalId = window.setInterval(function() {
+        try {
+            if(!player.hasMedia() || !player.isPlaying()) {
+                return;
+            }
+        } catch (e) {
+            // logging here will produce too may noize
+            return;
+        }
+        this.playerUpdated();
+    }.bind(this),1000);
     this.playerUpdated = function() {
-        let s = player && player.getState() || null;
+        let s = {};
+        if(player.hasMedia()) {
+            s = player.getTrack() || s;
+            s.paused = !player.isPlaying();
+        }
         send("on-player-update", [s]);
     }.bind(this);
     this.setPlayer = function(p) {
@@ -87,16 +111,42 @@ var foxhorn = new (function(){
           console.warn("Can not find handler for: ", method, " in ", Object.keys(player));
           return;
       }
-
-      let res = func.apply(player, msg.args);
-      if(response) {
-          send(response, [res]);
+      if(!player.hasMedia()) {
+          if(response) {
+              send(response, [null]);
+          }
+      } else {
+          try {
+              let res = func.apply(player, msg.args);
+              if(response) {
+                  send(response, [res]);
+              }
+          } catch (e) {
+              console.error("Can not invoke player method: ", method, "(", msg.args, "), due to error:", e);
+          }
       }
     }.bind(this);
     window.addEventListener("message", windowListener);
 
+    let beforeUnloadListener = function(event) {
+        console.debug("FH: befeoreunload");
+        safeCall(player.close, player);
+    }.bind(this);
+    window.addEventListener("beforeunload", beforeUnloadListener);
+
+    let loadListener = function(event) {
+        console.debug("FH: load");
+        safeCall(player.open, player);
+    }.bind(this);
+    window.addEventListener("load", loadListener);
+
     this.close = () => {
+        if(intervalId !== null) {
+            window.clearInterval(intervalId);
+        }
         window.removeEventListener("message", windowListener);
-        player.close();
+        window.removeEventListener("beforeunload", beforeUnloadListener);
+        window.removeEventListener("load", loadListener);
+        safeCall(player.close, player);
     };
 })();
