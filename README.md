@@ -32,9 +32,9 @@ Currently supported players:
 
 * music.yandex.ru
 * youtube (through 'default' player)
+* vk.com
 
 Support planned:
 
-* vk.com
 * bandcamp.com
 * soundcloud.com
