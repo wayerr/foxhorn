@@ -21,7 +21,14 @@ function saveOptions(e) {
     e.preventDefault();
     let data = {};
     opts.forEach((key, desc) => {
-        data[key] = document.getElementById(desc.elem).value;
+        let el = document.getElementById(desc.elem);
+        var res;
+        if(el.nodeName === "INPUT" && el.type === "checkbox") {
+            res = el.checked;
+        } else {
+            res = el.value;
+        }
+        data[key] = res;
     });
     opts.save(data);
 }
@@ -31,7 +38,13 @@ function restoreOptions() {
     var loader = opts.load();
     loader.then((data) => {
         opts.forEach((key, desc) => {
-            document.getElementById(desc.elem).value = data[key];
+            let el = document.getElementById(desc.elem);
+            let val = data[key];
+            if(el.nodeName === "INPUT" && el.type === "checkbox") {
+                el.checked = val;
+            } else {
+                el.value = val;
+            }
         });
     });
 }
@@ -39,5 +52,5 @@ function restoreOptions() {
 document.addEventListener("DOMContentLoaded", restoreOptions);
 document.getElementById("opts-save").addEventListener("click", saveOptions);
 document.getElementById("opts-clear").addEventListener("click", () => {
-     compat.p(browser.storage.local.clear).catch(e => {console.debug("Can not clear options:", e);});
+     compat.p(browser.storage.local.clear).catch(e => {console.error("Can not clear options:", e);});
 });

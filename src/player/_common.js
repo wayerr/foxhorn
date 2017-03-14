@@ -53,6 +53,13 @@ if(foxhorn) {
     }
 }
 var foxhorn = new (function(){
+    let dataInit = {};
+    try {
+        let dataInitText = document.currentScript.getAttribute("data-init");
+        dataInit =  dataInitText && JSON.parse(dataInitText);
+    } catch(e) {
+        console.error("Can not parse data-init attribute of currrent script:", e);
+    }
     var player = null;
     function send(to, args) {
         window.postMessage({
@@ -129,13 +136,13 @@ var foxhorn = new (function(){
     window.addEventListener("message", windowListener);
 
     let beforeUnloadListener = function(event) {
-        console.debug("FH: befeoreunload");
+        dataInit.logging && console.debug("FH: befeoreunload");
         safeCall(player.close, player);
     }.bind(this);
     window.addEventListener("beforeunload", beforeUnloadListener);
 
     let loadListener = function(event) {
-        console.debug("FH: load");
+        dataInit.logging && console.debug("FH: load");
         safeCall(player.open, player);
     }.bind(this);
     window.addEventListener("load", loadListener);

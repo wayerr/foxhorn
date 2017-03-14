@@ -29,7 +29,7 @@ class Content {
                 "player-prev": this.invokePlayer("prev"),
                 "player-next": this.invokePlayer("next"),
                 "player-get-state": this.invokePlayer("getTrack", EV_PLAYER_UPDATE),
-                "player-install": this.installPlayer.bind(this),
+                "content-init": this.contentInit.bind(this),
                 "system-unload": this.close.bind(this)
             }
         });
@@ -69,22 +69,30 @@ class Content {
         };
     }
 
-    installPlayer(playerName) {
-        console.debug(`Begin install player ${playerName}.`);
-        function addScript(id, script) {
+    contentInit(arg) {
+        this.logging = arg.logging;
+        this.logging && console.debug(`Begin install player ${arg.player}.`);
+        function addScript(id, script, callback) {
             try {
                 let scr = document.createElement("script");
                 scr.id = id;
                 let source = browser.runtime.getURL(script);
                 scr.src = source;
                 scr.setAttribute("type", "text/javascript");
+                if(callback) {
+                    callback(scr);
+                }
                 document.head.appendChild(scr);
             } catch (e) {
                 console.error(`Can not install ${id} from: ${script}, due to error:`, e);
             }
         }
-        addScript(ID_PLAYER_COMMON, `src/player/_common.js`);
-        addScript(ID_PLAYER, `src/player/${playerName}.js`);
+        addScript(ID_PLAYER_COMMON, `src/player/_common.js`, (scr) => {
+            scr.setAttribute("data-init", JSON.stringify({
+                logging: this.logging
+            }));
+        });
+        addScript(ID_PLAYER, `src/player/${arg.player}.js`);
     }
 
     playerUpdated(state) {

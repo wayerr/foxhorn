@@ -3,14 +3,23 @@
     <head>
         <title>FoxHorn options</title>
         <meta charset="UTF-8">
+        <style>
+            .row {
+                margin: 1em 0 ;
+            }
+        </style>
     </head>
     <body>
         
-        <div>
+        <div class="row">
             List of sites and their player types. <br/>
             Add lines like: 'domain:example.com player_type' per each site. # - comment
+            <textarea id="site-player-mapping" style="width:100%;height:20em"></textarea>
         </div>
-        <textarea id="site-player-mapping" style="width:100%;height:20em"></textarea>
+        <div class="row">
+            <input id="enable-logging" type="checkbox"/>
+            <label for="enable-logging">Enable logging</label>
+        </div>
         <br/>
         <button id="opts-save">save</button>
         <button id="opts-clear">clear</button>

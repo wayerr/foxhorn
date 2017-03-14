@@ -44,7 +44,7 @@ class Daemon {
     }
 
     init() {
-        console.debug("Init Daemon part of FoxHorn.");
+        this.logging && console.debug("Init Daemon part of FoxHorn.");
         let listen = (src, func) => {
             src.addListener(func.bind(this));
         };
@@ -61,6 +61,7 @@ class Daemon {
     }
 
     onOptsLoaded(data) {
+        this.logging = !!data.logging;
         for(let line of data.sites.split('\n')) {
             if(line.startsWith("#")) {
                 continue;
@@ -100,7 +101,7 @@ class Daemon {
     }
 
     onUnload() {
-        console.debug("Begin unload");
+        this.logging && console.debug("Begin unload");
         window.removeEventListener("unload", this.onUnload);
         this.rpc.call("system-unload")();
     }
@@ -123,7 +124,7 @@ class Daemon {
     }
 
     onCommand(cmd) {
-        console.debug("cmd in daemon:", cmd);
+        this.logging && console.debug("cmd in daemon:", cmd);
         let handler = this.cmdHandlers[cmd];
         if(handler) {
             let arg = {arg: {}, sender: null, sendResponse: () => {}};
@@ -144,10 +145,10 @@ class Daemon {
         return (arg) => {
             let player = this.player;
             if(!player.tabId) {
-                console.debug("no tab in player:", player);
+                this.logging && console.debug("no tab in player:", player);
                 return;
             }
-            console.debug(`Invoke ${player}.${method}()`);
+            this.logging && console.debug(`Invoke ${player}.${method}()`);
             this.sendToTab(player.tabId, method, [arg.arg])
                     .then(arg.sendResponse);
         };
@@ -173,7 +174,7 @@ class Daemon {
             }
         }
         if(player) {
-            console.debug("Found player:", player, " for ", data);
+            this.logging && console.debug("Found player:", player, " for ", data);
             return {name:player};
         }
         return null;
@@ -183,7 +184,7 @@ class Daemon {
         if(e.frameId !== 0) {
             return;
         }
-        console.debug("PAGE CHANGED:", e);
+        this.logging && console.debug("PAGE CHANGED:", e);
         let playerSrc = this.resolvePlayer({url: e.url});
         let isPlayerTab = this.player.tabId === e.tabId;
         if(!playerSrc) {
@@ -223,12 +224,12 @@ class Daemon {
     }
 
     injectPlayer(arg) {
-        console.debug(`Inject player driver '${arg.player}' to tab '${arg.tabId}' url '${arg.url}'`);
+        this.logging && console.debug(`Inject player driver '${arg.player}' to tab '${arg.tabId}' url '${arg.url}'`);
         this.setCurrentPlayer(arg);
 
-        function executor(arr, cb) {
+        let executor = (arr, cb) => {
             let src = arr.shift();
-            console.debug("Execute ", src, " in ", arg.tabId);
+            this.logging && console.debug("Execute ", src, " in ", arg.tabId);
             let promise = compat.p(browser.tabs.executeScript, arg.tabId, {file: src, runAt:"document_start"});
             promise.catch((e) => console.error('On exec ', src, ' we got error:', e));
             if(arr.length > 0) {
@@ -238,8 +239,11 @@ class Daemon {
             }
         };
         executor(["src/common.js", "src/content.js"], () => {
-            console.debug(`Send install command to ${arg.tabId}.`);
-            this.sendToTab(arg.tabId, "player-install", [arg.player]);
+            this.logging && console.debug(`Send install command to ${arg.tabId}.`);
+            this.sendToTab(arg.tabId, "content-init", [{
+                    player: arg.player,
+                    logging: this.logging
+                }]);
         });
     }
 }

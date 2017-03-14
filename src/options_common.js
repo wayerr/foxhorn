@@ -24,6 +24,10 @@ class Opts {
                      "domain:www.youtube.com   default\n"+
                      "domain:vk.com            vk\n"+
                      "#domain:example.com      default"
+            },
+            logging: {
+                elem: "enable-logging",
+                def: false
             }
         };
         this.loader = null;
@@ -60,7 +64,7 @@ class Opts {
 
             var p = compat.p(browser.storage.local.get);
             p.catch((e) => {
-                console.log(`Can not load options: ${e}`);
+                console.error(`Can not load options: ${e}`);
                 //then use defaults
                 atLoad(null);
             });
@@ -72,7 +76,7 @@ class Opts {
         console.debug("Save opts:", data);
         this.resetCache();
         let p = compat.p(browser.storage.local.set, data);
-        p.catch((e) => console.log(`Can not save options: ${e}`));
+        p.catch((e) => console.error(`Can not save options: ${e}`));
         p.then(() => this.rpc.call("opts-save")());
     }
 }
