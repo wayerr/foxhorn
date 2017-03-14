@@ -31,7 +31,7 @@
         }
 
         close() {
-            this.ap.off(this._ev_context);
+            ap.off(this._ev_context);
         }
 
         play() {
