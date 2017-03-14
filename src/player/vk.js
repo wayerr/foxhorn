@@ -74,7 +74,7 @@
             let duration = ct[5];
             return {
                 id:"track",
-                title: ct[3] + artist? ` - ${artist}` : "",
+                title: ct[3] + (artist? ` - ${artist}` : ""),
                 position: duration * p,
                 duration: duration
             };
