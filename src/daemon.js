@@ -17,9 +17,8 @@
 
 class Daemon {
     constructor() {
-        this.player = {
-            tabId: null
-        };
+        this.player = null;
+        this.setCurrentPlayer(null);
         this.cmdHandlers = {
             "cmd-play": this.invokePlayer("player-play"),
             "cmd-prev": this.invokePlayer("player-prev"),
@@ -39,6 +38,7 @@ class Daemon {
             }
         });
         this.opts = new Opts();
+        this.closeables = [];
         this.sites = [];
         this.loadOpts();
     }
@@ -46,11 +46,17 @@ class Daemon {
     init() {
         this.logging && console.debug("Init Daemon part of FoxHorn.");
         let listen = (src, func) => {
-            src.addListener(func.bind(this));
+            let binded = func.bind(this);
+            src.addListener(binded);
+            this.closeables.push(() => {
+                src.removeListener(binded);
+            });
         };
 
         listen(browser.commands.onCommand, this.onCommand);
-        listen(browser.webNavigation.onCompleted, this.onPageChanged);
+        listen(browser.webNavigation.onCompleted, this.onPageLoaded);
+        listen(browser.tabs.onRemoved, this.onPageRemoved);
+        // browser.tabs.onUpdated cause recursion at scrip iclude, so we not use this
         this._on_breforeunload = this.onUnload.bind(this);
         window.addEventListener("beforeunload", this._on_breforeunload);
     }
@@ -103,6 +109,13 @@ class Daemon {
     onUnload() {
         this.logging && console.debug("Begin unload");
         window.removeEventListener("beforeunload", this._on_breforeunload);
+        for(let closeable of this.closeables) {
+            try {
+                closeable();
+            } catch (e) {
+                console.error("Can not invoke closeable due to error: ", e);
+            }
+        }
         this.rpc.call("system-unload")();
         this.invokePlayer("system-unload")({
             args: [],
@@ -185,11 +198,21 @@ class Daemon {
         return null;
     }
 
-    onPageChanged(e) {
+    onPageLoaded(e) {
         if(e.frameId !== 0) {
             return;
         }
-        this.logging && console.debug("PAGE CHANGED:", e);
+        this.logging && console.debug("Page loading:", e);
+        this.checkForPlayer(e);
+    }
+
+    onPageRemoved(tabId, removeInfo) {
+        this.logging && console.debug("Page removed:", tabId);
+        this.setCurrentPlayer(null);
+        this.findPlayer();
+    }
+
+    checkForPlayer(e) {
         let playerSrc = this.resolvePlayer({url: e.url});
         let isPlayerTab = this.player.tabId === e.tabId;
         if(!playerSrc) {
@@ -207,19 +230,25 @@ class Daemon {
     }
     
     setCurrentPlayer(arg) {
-        if(this.player &&
+        if(this.player && arg &&
             this.player.tabId === arg.tabId &&
             this.player.url === arg.url) {
             return;
         }
         this.logging && console.debug("Change current player to: ", arg);
-        this.player = {
-            tabId: arg.tabId,
-            url: arg.url,
-            toString: function() {
-                return `('${this.url}' in ${this.tabId} tab)`;
-            }
-        };
+        if(!arg) {
+            this.player = {
+                tabId: null
+            };
+        } else {
+            this.player = {
+                tabId: arg.tabId,
+                url: arg.url,
+                toString: function() {
+                    return `('${this.url}' in ${this.tabId} tab)`;
+                }
+            };
+        }
     }
 
     onPlayerUpdated(arg) {
