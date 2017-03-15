@@ -97,11 +97,6 @@ class Content {
     }
 
     playerUpdated(state) {
-        let tab = this.rpc.tab;
-        if(tab) {
-            state.tabId = tab.id;
-            state.url = tab.url;
-        }
         this.rpc.call("on-player-update")(state);
     }
 

@@ -19,8 +19,9 @@
     class DefaultPlayer {
 
         constructor() {
+            this._events = ["play", "pause", "ended"];
             this.callback = (e) => {
-                content.playerUpdated();
+                foxhorn.playerUpdated();
             };
 
             console.debug("Begin create proxy");
@@ -55,7 +56,7 @@
                 console.debug("Can not resolve media on page:", items);
                 return;
             }
-            this._media = items[0];
+            this.setMedia(items[0]);
         }
 
         getMedia() {
@@ -113,8 +114,9 @@
         unsubscribe() {
             let old = this._media;
             if(old) {
-                old.removeEventListener("changed", this.callback);
-                old.removeEventListener("load", this.callback);
+                for(let e of this._events) {
+                    old.removeEventListener(e, this.callback);
+                }
             }
         }
 
@@ -131,8 +133,9 @@
             }
             this.unsubscribe();
             this._media = newmedia;
-            newmedia.addEventListener("changed", this.callback);
-            newmedia.addEventListener("load", this.callback);
+            for(let e of this._events) {
+                newmedia.addEventListener(e, this.callback);
+            }
             foxhorn.playerUpdated();
         }
     }

@@ -28,14 +28,14 @@ class Daemon {
         this.rpc = new Rpc({
             methods:{
                 "player-get": this.resolvePlayer,
-                "opts-save": this.loadOpts.bind(this),
-                "on-player-update": this.onPlayerUpdated.bind(this)
+                "opts-save": this.loadOpts.bind(this)
             },
             handlers: {
                 "player-play": this.invokePlayer("player-play"),
                 "player-prev": this.invokePlayer("player-prev"),
                 "player-next": this.invokePlayer("player-next"),
-                "player-get-state": this.invokePlayer("player-get-state")
+                "player-get-state": this.invokePlayer("player-get-state"),
+                "on-player-update": this.onPlayerUpdated.bind(this)
             }
         });
         this.opts = new Opts();
@@ -207,25 +207,28 @@ class Daemon {
     }
     
     setCurrentPlayer(arg) {
+        console.debug("Current player:", arg);
         this.player = {
             tabId: arg.tabId,
-            name: arg.player,
             url: arg.url,
             toString: function() {
-                return `${this.name}('${this.url}' in ${this.tabId} tab)`;
+                return `('${this.url}' in ${this.tabId} tab)`;
             }
         };
     }
 
-    onPlayerUpdated(state) {
-        if(!state.tabId) {
+    onPlayerUpdated(arg) {
+        let state = arg.args[0];
+        let tab = arg.sender && arg.sender.tab;
+        if(!tab) {
             return;
         }
-        this.setCurrentPlayer({
-            tabId: state.tabId,
-            url: state.url,
-            name: ""
-        });
+        let playerTab = {
+            tabId: tab.id,
+            url: tab.url
+        };
+        this.logging && console.debug("updated player:", state , " from tab:", playerTab);
+        this.setCurrentPlayer(playerTab);
     }
 
     injectPlayer(arg) {

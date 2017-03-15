@@ -93,17 +93,11 @@ class Rpc {
                 this.debug = true;
             }
         }
-
-        this.tab = null;
         browser.runtime.onMessage.addListener(this.onMessage.bind(this));
     }
 
     onMessage(msg, sender, sendResponse) {
         this.debug && console.debug(this._where, " msg in:", msg);
-        if(!this.tab) {
-            // this one way to obtain current tab in content scripts
-            this.tab = sender.tab;
-        }
         let method = msg.method;
         if(!method) {
             console.error(this._where, `Unexpected message '${msg}' without 'method' field`);
