@@ -17,19 +17,19 @@
   "commands": {
     "cmd-play": {
       "suggested_key": {
-        "default": "Ctrl+Shift+End"
+        "default": "MediaPlayPause"
       },
       "description": "Toggle play/pause"
     },
     "cmd-prev": {
       "suggested_key": {
-        "default": "Ctrl+Shift+Left"
+        "default": "MediaPrevTrack"
       },
       "description": "Next track"
     },
     "cmd-next": {
       "suggested_key": {
-        "default": "Ctrl+Shift+Right"
+        "default": "MediaNextTrack"
       },
       "description": "Previous track"
     }
