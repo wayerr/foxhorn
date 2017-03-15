@@ -51,8 +51,8 @@ class Daemon {
 
         listen(browser.commands.onCommand, this.onCommand);
         listen(browser.webNavigation.onCompleted, this.onPageChanged);
-        
-        window.addEventListener("unload", this.onUnload);
+        this._on_breforeunload = this.onUnload.bind(this);
+        window.addEventListener("beforeunload", this._on_breforeunload);
     }
 
     loadOpts() {
@@ -102,8 +102,13 @@ class Daemon {
 
     onUnload() {
         this.logging && console.debug("Begin unload");
-        window.removeEventListener("unload", this.onUnload);
+        window.removeEventListener("beforeunload", this._on_breforeunload);
         this.rpc.call("system-unload")();
+        this.invokePlayer("system-unload")({
+            args: [],
+            sender: null,
+            sendResponse: () => {}
+        });
     }
 
     findPlayer() {
@@ -149,7 +154,7 @@ class Daemon {
                 return;
             }
             this.logging && console.debug(`Invoke ${player}.${method}()`);
-            this.sendToTab(player.tabId, method, [arg.arg])
+            this.sendToTab(player.tabId, method, arg.args)
                     .then(arg.sendResponse);
         };
     }

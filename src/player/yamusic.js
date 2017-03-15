@@ -19,17 +19,20 @@
     class YaMusicPlayer {
 
         constructor() {
-            this.listener = () => {
-                foxhorn.playerUpdated();
-            };
-            externalAPI.on(externalAPI.EVENT_STATE, this.listener);
-            externalAPI.on(externalAPI.EVENT_TRACK, this.listener);
+            this.features = new Set([foxhorn.F_PROGRESS_EVENT]);
+        }
+
+        open() {
+            externalAPI.on(externalAPI.EVENT_STATE, foxhorn.playerUpdated);
+            externalAPI.on(externalAPI.EVENT_TRACK, foxhorn.playerUpdated);
+            externalAPI.on(externalAPI.EVENT_PROGRESS, foxhorn.playerProgress);
         }
 
 
         close() {
-            externalAPI.off(externalAPI.EVENT_STATE, this.listener);
-            externalAPI.off(externalAPI.EVENT_TRACK, this.listener);
+            externalAPI.off(externalAPI.EVENT_STATE, foxhorn.playerUpdated);
+            externalAPI.off(externalAPI.EVENT_TRACK, foxhorn.playerUpdated);
+            externalAPI.off(externalAPI.EVENT_PROGRESS, foxhorn.playerProgress);
         }
 
         play() {

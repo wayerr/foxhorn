@@ -20,14 +20,13 @@
 
         constructor() {
             this._ev_context = "foxhorn_Vk_player_agent";
-            this.listener = () => {
-                foxhorn.playerUpdated();
-            };
+            this.features = new Set([foxhorn.F_PROGRESS_EVENT]);
         }
 
         open() {
-            ap.on("update", this.listener);
-            ap.on("play", this.listener);
+            ap.on(this._ev_context, "update", foxhorn.playerUpdated);
+            ap.on(this._ev_context, "play", foxhorn.playerUpdated);
+            ap.on(this._ev_context, "progress", foxhorn.playerProgress);
         }
 
         close() {

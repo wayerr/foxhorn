@@ -91,11 +91,13 @@
         }
 
         isPlaying() {
-            return this.getMedia().paused;
+            let m = this.getMedia();
+            return !m.paused;
         }
 
         hasMedia() {
-            return this.getMedia() !== null;
+            let m = this.getMedia();
+            return m && m.readyState !== m.HAVE_NOTHING;
         }
 
         getTrack() {

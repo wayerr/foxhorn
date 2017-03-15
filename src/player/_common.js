@@ -45,14 +45,17 @@ class Player {
 
 console.debug("Inject foxhorn.");
 // it must be redeclarable for reloading script
-if(foxhorn) {
-    try {
-        foxhorn.close();
-    } catch (e) {
-        console.error("On close redeclarated 'foxhorn':", e);
+try {
+    if(this["foxhorn"]) {
+            console.warn("Detect already declarated 'foxhorn', try to close: ", foxhorn);
+            foxhorn.close();
     }
+} catch (e) {
+    console.error("On close redeclarated 'foxhorn':", e);
 }
-var foxhorn = new (function(){
+foxhorn = new (function(){
+    const ID_PLAYER = "foxhorn_player_agent";
+    this.F_PROGRESS_EVENT = "f-progress-event";
     let dataInit = {};
     try {
         let dataInitText = document.currentScript.getAttribute("data-init");
@@ -60,13 +63,18 @@ var foxhorn = new (function(){
     } catch(e) {
         console.error("Can not parse data-init attribute of currrent script:", e);
     }
+    let foxhornNode = document.currentScript; // it will be cahnged due script reload
     var player = null;
-    function send(to, args) {
+    var playerOpened = false;
+    this.send = (to, args) => {
         window.postMessage({
               foxhorn:true,
               method: to,
-              args: args
+              args: args || []
         }, "*");
+    };
+    function support(who, feature) {
+        return who && who.features && who.features.has(feature);
     }
     function safeCall(func, thiz) {
         try {
@@ -76,30 +84,84 @@ var foxhorn = new (function(){
             console.error("Call of ", thiz, ".", func, " return error: ", e);
         }
     }
-    let intervalId = window.setInterval(function() {
-        try {
-            if(!player.hasMedia() || !player.isPlaying()) {
-                return;
-            }
-        } catch (e) {
-            // logging here will produce too may noize
+    function playerClose() {
+        dataInit.logging && console.debug("Close player");
+        if(intervalId !== null) {
+            window.clearInterval(intervalId);
+        }
+        if(player) {
+            safeCall(player.close, player);
+        }
+        playerOpened = false;
+    }
+    function playerOpen() {
+        if(playerOpened || !player) {
             return;
         }
-        this.playerUpdated();
-    }.bind(this),1000);
+        dataInit.logging && console.debug("Open player");
+        if(player.open) {
+            safeCall(player.open, player);
+        }
+        playerOpened =  true;
+    }
+    var intervalId = null;
     this.playerUpdated = function() {
         let s = {};
         if(player.hasMedia()) {
             s = player.getTrack() || s;
             s.paused = !player.isPlaying();
         }
-        send("on-player-update", [s]);
+        this.send("on-player-update", [s]);
     }.bind(this);
+    var lastProgress = 0;
+    this.playerProgress = function() {
+        // in future we may send only progress value, but now it simply reduce
+        // frequency of 'playerUpdated' events to one second
+        let now = Date.now();
+        if(now - lastProgress < 1000) {
+            return;
+        }
+        // we suppose that player is sent other events (stop/pause & etc) correctly,
+        // therefore we simply can skip progress for one second
+        lastProgress = now;
+        dataInit.logging && console.debug("Invoke 'updated' due to progress event.");
+        this.playerUpdated();
+    }.bind(this);
+    this.installPlayer = function() {
+        let scr = document.createElement("script");
+        scr.id = ID_PLAYER;
+        scr.src = dataInit.playerUrl;
+        scr.setAttribute("type", "text/javascript");
+        document.head.appendChild(scr);
+    };
     this.setPlayer = function(p) {
         if(player === p) {
             return;
         }
+        if(player) {
+            playerClose();
+        }
         player = p;
+        playerOpened = false;
+        dataInit.logging && console.debug("Player features: ", player.features);
+        if(!support(player, this.F_PROGRESS_EVENT)) {
+            // if player does not support events, we init interval
+            dataInit.logging && console.debug("Create player watcher, due it not suppoer progress event.");
+            intervalId = window.setInterval(function() {
+                try {
+                    if(!player.hasMedia() || !player.isPlaying()) {
+                        return;
+                    }
+                } catch (e) {
+                    // logging here will produce too may noize
+                    return;
+                }
+                this.playerUpdated();
+            }.bind(this),1000);
+        }
+        if(document.readyState === "complete") {
+            playerOpen();
+        }
         this.playerUpdated();
     }.bind(this);
     this.getPlayer = function() {
@@ -116,6 +178,11 @@ var foxhorn = new (function(){
       }
       //console.debug("Player receive: ", msg);
       let method = msg.method;
+      if("close" === method) {
+          console.debug("Close agent by event from context.");
+          this.close();
+          return;
+      }
       let response = msg.response;
       let func = player[method];
       if(!func) {
@@ -124,13 +191,13 @@ var foxhorn = new (function(){
       }
       if(!player.hasMedia()) {
           if(response) {
-              send(response, [null]);
+              this.send(response, [null]);
           }
       } else {
           try {
               let res = func.apply(player, msg.args);
               if(response) {
-                  send(response, [res]);
+                  this.send(response, [res]);
               }
           } catch (e) {
               console.error("Can not invoke player method: ", method, "(", msg.args, "), due to error:", e);
@@ -141,23 +208,29 @@ var foxhorn = new (function(){
 
     let beforeUnloadListener = function(event) {
         dataInit.logging && console.debug("FH: befeoreunload");
-        safeCall(player.close, player);
+        this.close();
     }.bind(this);
     window.addEventListener("beforeunload", beforeUnloadListener);
 
     let loadListener = function(event) {
-        dataInit.logging && console.debug("FH: load");
-        safeCall(player.open, player);
+        playerOpen();
     }.bind(this);
     window.addEventListener("load", loadListener);
 
     this.close = () => {
-        if(intervalId !== null) {
-            window.clearInterval(intervalId);
-        }
         window.removeEventListener("message", windowListener);
         window.removeEventListener("beforeunload", beforeUnloadListener);
         window.removeEventListener("load", loadListener);
-        safeCall(player.close, player);
+        playerClose();
+        let playerNode = document.getElementById(ID_PLAYER);
+        if(playerNode) {
+            playerNode.parentNode.removeChild(playerNode);
+        }
+        // remove node which init this
+        if(foxhornNode && foxhornNode.parentNode) {
+            foxhornNode.parentNode.removeChild(foxhornNode);
+        }
     };
 })();
+
+foxhorn.installPlayer();

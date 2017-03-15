@@ -16,13 +16,13 @@
  */
 
 const ID_PLAYER_COMMON = "foxhorn_player_common";
-const ID_PLAYER = "foxhorn_player_agent";
 const EV_PLAYER_UPDATE = "on-player-update";
 
 class Content {
     constructor() {
         this._player = null;
         this.unloadCallbacks = [];
+        this._bindedClose = this.close.bind(this);
         this.rpc = new Rpc({
             methods: {
                 "player-play": this.invokePlayer("play"),
@@ -30,7 +30,7 @@ class Content {
                 "player-next": this.invokePlayer("next"),
                 "player-get-state": this.invokePlayer("getTrack", EV_PLAYER_UPDATE),
                 "content-init": this.contentInit.bind(this),
-                "system-unload": this.close.bind(this)
+                "system-unload": this._bindedClose
             }
         });
 
@@ -50,6 +50,7 @@ class Content {
             }
         }.bind(this);
         window.addEventListener("message", this.onDomMessage);
+        window.addEventListener("beforeunload", this._bindedClose);
     }
 
     invokePlayer(name, to) {
@@ -89,10 +90,10 @@ class Content {
         }
         addScript(ID_PLAYER_COMMON, `src/player/_common.js`, (scr) => {
             scr.setAttribute("data-init", JSON.stringify({
-                logging: this.logging
+                logging: this.logging,
+                playerUrl: browser.runtime.getURL(`src/player/${arg.player}.js`)
             }));
         });
-        addScript(ID_PLAYER, `src/player/${arg.player}.js`);
     }
 
     playerUpdated(state) {
@@ -105,18 +106,17 @@ class Content {
     }
 
     close() {
+        console.debug('Content close');
         window.removeEventListener("message", this.onDomMessage);
-        function clearNode(id) {
-            let scr = document.getElementById(id);
-            if(scr) {
-                scr.parentNode.removeChild(scr);
-            }
+        window.removeEventListener("beforeunload", this._bindedClose);
+        this.invokePlayer()();
+        let scr = document.getElementById(ID_PLAYER_COMMON);
+        if(scr) {
+            scr.parentNode.removeChild(scr);
         }
-        clearNode(ID_PLAYER_COMMON);
-        clearNode(ID_PLAYER);
     }
 }
 
 console.debug('Begin content init');
-let content = new Content();
+fhContent = new Content();
 console.debug('Content inited');
