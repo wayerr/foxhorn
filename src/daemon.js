@@ -207,7 +207,7 @@ class Daemon {
     }
     
     setCurrentPlayer(arg) {
-        console.debug("Current player:", arg);
+        this.logging && console.debug("Current player:", arg);
         this.player = {
             tabId: arg.tabId,
             url: arg.url,
