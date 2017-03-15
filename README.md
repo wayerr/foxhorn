@@ -22,9 +22,9 @@ domain:www.youtube.com   default
 
 ### Hotkeys
 
- - `Ctrl+Shift+End` - Toggle play/pause
- - `Ctrl+Shift+Left` - Next track (not all players support)
- - `Ctrl+Shift+Right` - Previous track  (not all players support)
+ - `MediaPlayPause` - Toggle play/pause
+ - `MediaNextTrack` - Next track (not all players support)
+ - `MediaPrevTrack` - Previous track  (not all players support)
 
 ## Supported sites
 
