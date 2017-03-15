@@ -207,7 +207,12 @@ class Daemon {
     }
     
     setCurrentPlayer(arg) {
-        this.logging && console.debug("Current player:", arg);
+        if(this.player &&
+            this.player.tabId === arg.tabId &&
+            this.player.url === arg.url) {
+            return;
+        }
+        this.logging && console.debug("Change current player to: ", arg);
         this.player = {
             tabId: arg.tabId,
             url: arg.url,
@@ -227,7 +232,6 @@ class Daemon {
             tabId: tab.id,
             url: tab.url
         };
-        this.logging && console.debug("updated player:", state , " from tab:", playerTab);
         this.setCurrentPlayer(playerTab);
     }
 
