@@ -16,12 +16,12 @@
  */
 
 //workaround for chrome
-var _z = this;
 let compat = new (function(){
-    var isChrome = !!_z["chrome"];
-    if(!_z["browser"] && isChrome) {
+    var isChrome = !window["browser"];
+    if(isChrome) {
         browser = chrome;
     }
+    console.debug(isChrome? "It chrome: enable compatibility layer" : "Is browser which support WebExtensions.");
     this.p = function(/*func, ...args*/) {
         let args = Array.from(arguments);
         let func = args.shift();
@@ -31,7 +31,7 @@ let compat = new (function(){
         let handlers = {};
         let p = new Promise((resolve, reject) => {
             handlers.resolve = resolve;
-            handlers.reject = resolve;
+            handlers.reject = reject;
         });
         let cb = function() {
             let err = chrome.runtime.lastError;
