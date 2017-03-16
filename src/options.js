@@ -50,7 +50,28 @@ function restoreOptions() {
 }
 
 document.addEventListener("DOMContentLoaded", restoreOptions);
-document.getElementById("opts-save").addEventListener("click", saveOptions);
-document.getElementById("opts-clear").addEventListener("click", () => {
+function listen(elem, event, func) {
+    document.getElementById(elem).addEventListener(event, func);
+}
+listen("opts-save", "click", saveOptions);
+listen("opts-clear", "click", () => {
      compat.p(browser.storage.local.clear).catch(e => {console.error("Can not clear options:", e);});
+});
+
+let userPlayers = document.getElementById("user-players");
+let userPlayerName = document.getElementById("user-player-name");
+let userPlayerCode = document.getElementById("user-player-code");
+
+listen("user-player-add", "click", () => {
+    let o = document.createElement("option");
+    o.text = "myplayer";
+    userPlayers.add(o);
+});
+listen("user-player-remove", "click", () => {
+    let index = userPlayers.selectedIndex;
+    if(index === -1) {
+        return;
+    }
+    userPlayers.remove(index);
+
 });
