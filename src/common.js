@@ -67,6 +67,8 @@ let utils = {
     }
 };
 
+const M_SYSTEM_UNLOAD = "system-unload";
+
 class Rpc {
     constructor(arg) {
         this._where = utils.currentScript();
@@ -93,7 +95,12 @@ class Rpc {
                 this.debug = true;
             }
         }
-        browser.runtime.onMessage.addListener(this.onMessage.bind(this));
+        let onMessage = this.onMessage.bind(this);
+        browser.runtime.onMessage.addListener(onMessage);
+        this.close = () => {
+            console.debug(this._where, "Unload rpc");
+            browser.runtime.onMessage.removeListener(onMessage);
+        };
     }
 
     onMessage(msg, sender, sendResponse) {
@@ -102,6 +109,9 @@ class Rpc {
         if(!method) {
             console.error(this._where, `Unexpected message '${msg}' without 'method' field`);
             return;
+        }
+        if(method === M_SYSTEM_UNLOAD) {
+            this.close();
         }
         let handler = this.handlers[method];
         if(!handler) {

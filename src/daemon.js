@@ -38,7 +38,7 @@ class Daemon {
             }
         });
         this.opts = new Opts();
-        this.closeables = [];
+        this.closeables = [this.rpc.close];
         this.sites = [];
         this.loadOpts();
     }
@@ -107,7 +107,7 @@ class Daemon {
     }
 
     onUnload() {
-        this.logging && console.debug("Begin unload");
+        console.debug("Begin unload daemon");
         window.removeEventListener("beforeunload", this._on_breforeunload);
         for(let closeable of this.closeables) {
             try {
@@ -116,12 +116,13 @@ class Daemon {
                 console.error("Can not invoke closeable due to error: ", e);
             }
         }
-        this.rpc.call("system-unload")();
-        this.invokePlayer("system-unload")({
+        this.rpc.call(M_SYSTEM_UNLOAD)();
+        this.invokePlayer(M_SYSTEM_UNLOAD)({
             args: [],
             sender: null,
             sendResponse: () => {}
         });
+        console.debug("End unload daemon");
     }
 
     findPlayer() {
@@ -155,8 +156,9 @@ class Daemon {
             method: method,
             args: args
         };
-        return compat.p(browser.tabs.sendMessage, tabId, msg)
-           .catch((e) => console.error(`On send '${method}' to content we got error: ${e}`));
+        let p = compat.p(browser.tabs.sendMessage, tabId, msg);
+        this.logging && p.catch((e) => console.error(`On send '${method}' to content we got error: ${e}`));
+        return p;
     }
 
     invokePlayer(method) {
@@ -268,23 +270,28 @@ class Daemon {
         this.logging && console.debug(`Inject player driver '${arg.player}' to tab '${arg.tabId}' url '${arg.url}'`);
         this.setCurrentPlayer(arg);
 
-        let executor = (arr, cb) => {
-            let src = arr.shift();
-            this.logging && console.debug("Execute ", src, " in ", arg.tabId);
-            let promise = compat.p(browser.tabs.executeScript, arg.tabId, {file: src, runAt:"document_start"});
-            promise.catch((e) => console.error('On exec ', src, ' we got error:', e));
-            if(arr.length > 0) {
-                promise.then(() => executor(arr, cb));
-            } else {
-                promise.then(cb);
-            }
-        };
-        executor(["src/common.js", "src/content.js"], () => {
-            this.logging && console.debug(`Send install command to ${arg.tabId}.`);
-            this.sendToTab(arg.tabId, "content-init", [{
-                    player: arg.player,
-                    logging: this.logging
-                }]);
+        //test that tab has not script
+        this.sendToTab(arg.tabId, "content-get-state", [])
+            .catch(() => {
+            //we inject player when content can not response
+            let executor = (arr, cb) => {
+                let src = arr.shift();
+                this.logging && console.debug("Execute ", src, " in ", arg.tabId);
+                let promise = compat.p(browser.tabs.executeScript, arg.tabId, {file: src, runAt:"document_start"});
+                promise.catch((e) => console.error('On exec ', src, ' we got error:', e));
+                if(arr.length > 0) {
+                    promise.then(() => executor(arr, cb));
+                } else {
+                    promise.then(cb);
+                }
+            };
+            executor(["src/common.js", "src/content.js"], () => {
+                this.logging && console.debug(`Send install command to ${arg.tabId}.`);
+                this.sendToTab(arg.tabId, "content-init", [{
+                        player: arg.player,
+                        logging: this.logging
+                    }]);
+            });
         });
     }
 }

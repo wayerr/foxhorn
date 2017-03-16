@@ -20,7 +20,6 @@ const EV_PLAYER_UPDATE = "on-player-update";
 
 class Content {
     constructor() {
-        this._player = null;
         this.unloadCallbacks = [];
         this._bindedClose = this.close.bind(this);
         this.rpc = new Rpc({
@@ -30,7 +29,8 @@ class Content {
                 "player-next": this.invokePlayer("next"),
                 "player-get-state": this.invokePlayer("getTrack", EV_PLAYER_UPDATE),
                 "content-init": this.contentInit.bind(this),
-                "system-unload": this._bindedClose
+                M_SYSTEM_UNLOAD: this._bindedClose,
+                "content-get-state": this.getState.bind(this)
             }
         });
 
@@ -94,6 +94,12 @@ class Content {
                 playerUrl: browser.runtime.getURL(`src/player/${arg.player}.js`)
             }));
         });
+    }
+
+    getState() {
+        return {
+            ok: true
+        };
     }
 
     playerUpdated(state) {
