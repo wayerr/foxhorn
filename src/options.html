@@ -4,6 +4,10 @@
         <title>FoxHorn options</title>
         <meta charset="UTF-8">
         <style>
+            body {
+                /* for chrome */
+                min-width: 50em;
+            }
             .row {
                 margin: 1em 0 ;
             }
@@ -35,29 +39,7 @@
                         <input id="user-player-name" type="text" placeholder="myplayer" />
                         <label for="user-player-name">Name of player type</label>
                     </div>
-                    <textarea id="user-player-code" rows="10" style="font-family: monospace !important" >
-//see doc on https://github.com/wayerr/foxhorn
-foxhorn.setPlayer({
-        features: new Set([foxhorn.F_PROGRESS_EVENT])
-        open: () => api.on("update", foxhorn.playerProgress),
-        close: () => api.off(foxhorn.playerProgress),
-        play: () => api.isPlaying()? api.pause() : api.play(),
-        next: api.next,
-        prev: api.prev,
-        getProgress: api.getProgress,
-        isPlaying: api.isPlaying,
-        hasMedia: () => !!api.getTrack(),
-        getTrack: () => {
-            let ct = api.getTrack();
-            return {
-                id:"track",
-                title: ct.title,
-                position: ct.duration * api.getProgress(),
-                duration: ct.duration
-            };
-        }
-    });
-                    </textarea>
+                    <textarea id="user-player-code" rows="10" style="font-family: monospace !important" ></textarea>
                 </div>
             </div>
             <div>

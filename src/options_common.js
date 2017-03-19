@@ -28,6 +28,9 @@ class Opts {
             logging: {
                 elem: "enable-logging",
                 def: false
+            },
+            userPlayers: {
+                elem: "user-players"
             }
         };
         this.loader = null;
