@@ -17,7 +17,8 @@
   "commands": {
     "cmd-play": {
       "suggested_key": {
-        "default": "MediaPlayPause"
+        "default": "MediaPlayPause",
+        "linux": "Ctrl+Space"
       },
       "description": "Toggle play/pause"
     },
