@@ -130,7 +130,11 @@ foxhorn = new (function(){
     this.installPlayer = function() {
         let scr = document.createElement("script");
         scr.id = ID_PLAYER;
-        scr.src = dataInit.playerUrl;
+        if(dataInit.playerCode) {
+            scr.text = dataInit.playerCode;
+        } else {
+            scr.src = dataInit.playerUrl;
+        }
         scr.setAttribute("type", "text/javascript");
         document.head.appendChild(scr);
     };

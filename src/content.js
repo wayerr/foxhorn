@@ -88,11 +88,14 @@ class Content {
                 console.error(`Can not install ${id} from: ${script}, due to error:`, e);
             }
         }
+        let scriptArg = {logging: this.logging};
+        if(arg.playerCode) {
+            scriptArg.playerCode = arg.playerCode;
+        } else {
+            scriptArg.playerUrl = browser.runtime.getURL(`src/player/${arg.player}.js`);
+        }
         addScript(ID_PLAYER_COMMON, `src/player/_common.js`, (scr) => {
-            scr.setAttribute("data-init", JSON.stringify({
-                logging: this.logging,
-                playerUrl: browser.runtime.getURL(`src/player/${arg.player}.js`)
-            }));
+            scr.setAttribute("data-init", JSON.stringify(scriptArg));
         });
     }
 

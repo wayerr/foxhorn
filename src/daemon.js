@@ -103,6 +103,7 @@ class Daemon {
                 matcher: matcher
             });
         }
+        this.userPlayers = data.userPlayers;
         this.findPlayer();
     }
 
@@ -285,10 +286,13 @@ class Daemon {
                     promise.then(cb);
                 }
             };
+            var playerCode = this.userPlayers && this.userPlayers[arg.player];
+            console.debug(this.userPlayers, playerCode);
             executor(["src/common.js", "src/content.js"], () => {
                 this.logging && console.debug(`Send install command to ${arg.tabId}.`);
                 this.sendToTab(arg.tabId, "content-init", [{
                         player: arg.player,
+                        playerCode: playerCode,
                         logging: this.logging
                     }]);
             });
