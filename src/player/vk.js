@@ -15,70 +15,66 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-{
-    class VkPlayer {
+foxhorn_player = new class {
 
-        constructor() {
-            this._ev_context = "foxhorn_Vk_player_agent";
-            this.features = new Set([foxhorn.F_PROGRESS_EVENT]);
+    constructor() {
+        this._ev_context = "foxhorn_Vk_player_agent";
+        this.features = new Set([foxhorn.F_PROGRESS_EVENT]);
+    }
+
+    open() {
+        ap.on(this._ev_context, "update", foxhorn.playerUpdated);
+        ap.on(this._ev_context, "play", foxhorn.playerUpdated);
+        ap.on(this._ev_context, "progress", foxhorn.playerProgress);
+    }
+
+    close() {
+        ap.off(this._ev_context);
+    }
+
+    play() {
+        if(ap.isPlaying()) {
+            ap.pause();
+        } else {
+            ap.play();
         }
+    }
 
-        open() {
-            ap.on(this._ev_context, "update", foxhorn.playerUpdated);
-            ap.on(this._ev_context, "play", foxhorn.playerUpdated);
-            ap.on(this._ev_context, "progress", foxhorn.playerProgress);
+    next() {
+        ap.playNext();
+    }
+
+    prev() {
+        ap.playPrev();
+    }
+
+    getProgress() {
+        return ap.getCurrentProgress();
+    }
+
+    isPlaying() {
+        return ap.isPlaying();
+    }
+
+    hasMedia() {
+        // getCurrentAudio - return false when no media, or [] - when exists
+        return !!ap.getCurrentAudio();
+    }
+
+    getTrack() {
+        let ct = ap.getCurrentAudio();
+        if(!ct) {
+            return null;
         }
-
-        close() {
-            ap.off(this._ev_context);
-        }
-
-        play() {
-            if(ap.isPlaying()) {
-                ap.pause();
-            } else {
-                ap.play();
-            }
-        }
-
-        next() {
-            ap.playNext();
-        }
-
-        prev() {
-            ap.playPrev();
-        }
-
-        getProgress() {
-            return ap.getCurrentProgress();
-        }
-
-        isPlaying() {
-            return ap.isPlaying();
-        }
-
-        hasMedia() {
-            // getCurrentAudio - return false when no media, or [] - when exists
-            return !!ap.getCurrentAudio();
-        }
-
-        getTrack() {
-            let ct = ap.getCurrentAudio();
-            if(!ct) {
-                return null;
-            }
-            let p = ap.getCurrentProgress();
-             //["", "", "", "Highway Star", "Deep Purple", 365, 0, 0, "", 0, 520, "", "[]", ""]
-            let artist = ct[4];
-            let duration = ct[5];
-            return {
-                id:"track",
-                title: ct[3] + (artist? ` - ${artist}` : ""),
-                position: duration * p,
-                duration: duration
-            };
-        }
-    };
-
-    foxhorn.setPlayer(new VkPlayer());
-}
+        let p = ap.getCurrentProgress();
+         //["", "", "", "Highway Star", "Deep Purple", 365, 0, 0, "", 0, 520, "", "[]", ""]
+        let artist = ct[4];
+        let duration = ct[5];
+        return {
+            id:"track",
+            title: ct[3] + (artist? ` - ${artist}` : ""),
+            position: duration * p,
+            duration: duration
+        };
+    }
+};

@@ -15,72 +15,68 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-{
-    class YaMusicPlayer {
+foxhorn_player = new class {
 
-        constructor() {
-            this.features = new Set([foxhorn.F_PROGRESS_EVENT]);
+    constructor() {
+        this.features = new Set([foxhorn.F_PROGRESS_EVENT]);
+    }
+
+    open() {
+        externalAPI.on(externalAPI.EVENT_STATE, foxhorn.playerUpdated);
+        externalAPI.on(externalAPI.EVENT_TRACK, foxhorn.playerUpdated);
+        externalAPI.on(externalAPI.EVENT_PROGRESS, foxhorn.playerProgress);
+    }
+
+
+    close() {
+        externalAPI.off(externalAPI.EVENT_STATE, foxhorn.playerUpdated);
+        externalAPI.off(externalAPI.EVENT_TRACK, foxhorn.playerUpdated);
+        externalAPI.off(externalAPI.EVENT_PROGRESS, foxhorn.playerProgress);
+    }
+
+    play() {
+        let p = externalAPI.getProgress();
+        if(externalAPI.isPlaying() || p.position > 0) {
+            externalAPI.togglePause();
+        } else {
+            externalAPI.play();
         }
+    }
 
-        open() {
-            externalAPI.on(externalAPI.EVENT_STATE, foxhorn.playerUpdated);
-            externalAPI.on(externalAPI.EVENT_TRACK, foxhorn.playerUpdated);
-            externalAPI.on(externalAPI.EVENT_PROGRESS, foxhorn.playerProgress);
+    next() {
+        externalAPI.next();
+    }
+
+    prev() {
+        externalAPI.prev();
+    }
+
+    getProgress() {
+        let p = externalAPI.getProgress();
+        if(!p) {
+            return 0;
         }
+        return p.duration / p.postion;
+    }
 
+    isPlaying() {
+        return externalAPI.isPlaying();
+    }
 
-        close() {
-            externalAPI.off(externalAPI.EVENT_STATE, foxhorn.playerUpdated);
-            externalAPI.off(externalAPI.EVENT_TRACK, foxhorn.playerUpdated);
-            externalAPI.off(externalAPI.EVENT_PROGRESS, foxhorn.playerProgress);
-        }
+    hasMedia() {
+        return externalAPI.getCurrentTrack() !== null;
+    }
 
-        play() {
-            let p = externalAPI.getProgress();
-            if(externalAPI.isPlaying() || p.position > 0) {
-                externalAPI.togglePause();
-            } else {
-                externalAPI.play();
-            }
-        }
-
-        next() {
-            externalAPI.next();
-        }
-
-        prev() {
-            externalAPI.prev();
-        }
-        
-        getProgress() {
-            let p = externalAPI.getProgress();
-            if(!p) {
-                return 0;
-            }
-            return p.duration / p.postion;
-        }
-
-        isPlaying() {
-            return externalAPI.isPlaying();
-        }
-
-        hasMedia() {
-            return externalAPI.getCurrentTrack() !== null;
-        }
-
-        getTrack() {
-            let ct = externalAPI.getCurrentTrack();
-            let p = externalAPI.getProgress();
-            let album = ct.album.title || '<unknown>';
-            let artist = ct.album.artists && ct.album.artists[0].title || '<unknown>';
-            return {
-                id:"track",
-                title:`${ct.title} - ${album} - ${artist}`,
-                position: p.position,
-                duration: p.duration
-            };
-        }
-    };
-
-    foxhorn.setPlayer(new YaMusicPlayer());
-}
+    getTrack() {
+        let ct = externalAPI.getCurrentTrack();
+        let p = externalAPI.getProgress();
+        let album = ct.album.title || '<unknown>';
+        let artist = ct.album.artists && ct.album.artists[0].title || '<unknown>';
+        return {
+            id:"track",
+            title:`${ct.title} - ${album} - ${artist}`,
+            position: p.position,
+            duration: p.duration
+        };
+    }
+};

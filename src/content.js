@@ -16,6 +16,7 @@
  */
 
 const ID_PLAYER_COMMON = "foxhorn_player_common";
+const ID_PLAYER_AGENT = "foxhorn_player_agent";
 const EV_PLAYER_UPDATE = "on-player-update";
 
 class Content {
@@ -73,29 +74,31 @@ class Content {
     contentInit(arg) {
         this.logging = arg.logging;
         this.logging && console.debug(`Begin install player ${arg.player}.`);
-        function addScript(id, script, callback) {
+        function addScript(id, path, callback) {
             try {
                 let scr = document.createElement("script");
                 scr.id = id;
-                let source = browser.runtime.getURL(script);
-                scr.src = source;
+                if(path) {
+                    scr.src = browser.runtime.getURL(path);
+                }
                 scr.setAttribute("type", "text/javascript");
                 if(callback) {
                     callback(scr);
                 }
                 document.head.appendChild(scr);
             } catch (e) {
-                console.error(`Can not install ${id} from: ${script}, due to error:`, e);
+                console.error(`Can not install ${id} from: ${path}, due to error:`, e);
             }
         }
-        let scriptArg = {logging: this.logging};
-        if(arg.playerCode) {
-            scriptArg.playerCode = arg.playerCode;
-        } else {
-            scriptArg.playerUrl = browser.runtime.getURL(`src/player/${arg.player}.js`);
-        }
-        addScript(ID_PLAYER_COMMON, `src/player/_common.js`, (scr) => {
-            scr.setAttribute("data-init", JSON.stringify(scriptArg));
+
+        var playerUrl = !arg.playerCode && `src/player/${arg.player}.js`;
+        addScript(ID_PLAYER_COMMON, 'src/player/_common.js', (scr) => {
+            scr.setAttribute("data-init", JSON.stringify({logging: this.logging}));
+        });
+        addScript(ID_PLAYER_AGENT, playerUrl, (scr) => {
+            if(arg.playerCode) {
+                scr.text = arg.playerCode;
+            }
         });
     }
 
@@ -113,11 +116,15 @@ class Content {
         console.debug('Content close');
         window.removeEventListener("message", this.onDomMessage);
         window.removeEventListener("beforeunload", this._bindedClose);
-        this.invokePlayer()();
-        let scr = document.getElementById(ID_PLAYER_COMMON);
-        if(scr) {
-            scr.parentNode.removeChild(scr);
+        this.invokePlayer("close")();
+        function removeNode(id) {
+            let scr = document.getElementById(id);
+            if(scr) {
+                scr.parentNode.removeChild(scr);
+            }
         }
+        removeNode(ID_PLAYER_COMMON);
+        removeNode(ID_PLAYER_AGENT);
     }
 }
 

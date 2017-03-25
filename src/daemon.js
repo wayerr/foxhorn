@@ -287,7 +287,6 @@ class Daemon {
                 }
             };
             var playerCode = this.userPlayers && this.userPlayers[arg.player];
-            console.debug(this.userPlayers, playerCode);
             executor(["src/common.js", "src/content.js"], () => {
                 this.logging && console.debug(`Send install command to ${arg.tabId}.`);
                 this.sendToTab(arg.tabId, "content-init", [{

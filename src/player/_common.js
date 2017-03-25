@@ -54,7 +54,6 @@ try {
     console.error("On close redeclarated 'foxhorn':", e);
 }
 foxhorn = new (function(){
-    const ID_PLAYER = "foxhorn_player_agent";
     this.F_PROGRESS_EVENT = "f-progress-event";
     let dataInit = {};
     try {
@@ -64,7 +63,6 @@ foxhorn = new (function(){
         console.error("Can not parse data-init attribute of currrent script:", e);
     }
     let foxhornNode = document.currentScript; // it will be cahnged due script reload
-    var player = null;
     var playerOpened = false;
     this.send = (to, args) => {
         window.postMessage({
@@ -84,17 +82,19 @@ foxhorn = new (function(){
             console.error("Call of ", thiz, ".", func, " return error: ", e);
         }
     }
-    function playerClose() {
+    var playerClose = () => {
         dataInit.logging && console.debug("Close player");
         if(intervalId !== null) {
             window.clearInterval(intervalId);
         }
+        let player = this.getPlayer();
         if(player) {
             safeCall(player.close, player);
         }
         playerOpened = false;
-    }
-    function playerOpen() {
+    };
+    var playerOpen = () => {
+        let player = this.getPlayer();
         if(playerOpened || !player) {
             return;
         }
@@ -103,10 +103,11 @@ foxhorn = new (function(){
             safeCall(player.open, player);
         }
         playerOpened =  true;
-    }
+    };
     var intervalId = null;
     this.playerUpdated = function() {
         let s = {};
+        let player = this.getPlayer();
         if(player.hasMedia()) {
             s = player.getTrack() || s;
             s.paused = !player.isPlaying();
@@ -127,33 +128,23 @@ foxhorn = new (function(){
         dataInit.logging && console.debug("Invoke 'updated' due to progress event.");
         this.playerUpdated();
     }.bind(this);
-    this.installPlayer = function() {
-        let scr = document.createElement("script");
-        scr.id = ID_PLAYER;
-        if(dataInit.playerCode) {
-            scr.text = dataInit.playerCode;
-        } else {
-            scr.src = dataInit.playerUrl;
-        }
-        scr.setAttribute("type", "text/javascript");
-        document.head.appendChild(scr);
-    };
-    this.setPlayer = function(p) {
-        if(player === p) {
+    var currPlayer;
+    var foundNewPlayer = (newPlayer) => {
+        if(currPlayer === newPlayer) {
             return;
         }
-        if(player) {
+        if(currPlayer) {
             playerClose();
         }
-        player = p;
+        currPlayer = newPlayer;
         playerOpened = false;
-        dataInit.logging && console.debug("Player features: ", player.features);
-        if(!support(player, this.F_PROGRESS_EVENT)) {
+        dataInit.logging && console.debug("Player features: ", currPlayer.features);
+        if(!support(currPlayer, this.F_PROGRESS_EVENT)) {
             // if player does not support events, we init interval
             dataInit.logging && console.debug("Create player watcher, due it not suppoer progress event.");
             intervalId = window.setInterval(function() {
                 try {
-                    if(!player.hasMedia() || !player.isPlaying()) {
+                    if(!currPlayer.hasMedia() || !currPlayer.isPlaying()) {
                         return;
                     }
                 } catch (e) {
@@ -167,12 +158,22 @@ foxhorn = new (function(){
             playerOpen();
         }
         this.playerUpdated();
-    }.bind(this);
+    };
     this.getPlayer = function() {
-        // it need only for debugging
-        return player;
+        // we have troubles when want to init player and this script, because
+        // they load concurrently, therefore we define player as variable
+        let prop = "foxhorn_player";
+        let p = window[prop];
+        if(p) {
+            foundNewPlayer(p);
+        } else {
+            console.error("Can not find " + prop);
+            return null;
+        }
+        return currPlayer;
     }.bind(this);
     let windowListener = function(event) {
+      let player = this.getPlayer();
       if (event.source !== window || !player) {
         return;
       }
@@ -226,15 +227,13 @@ foxhorn = new (function(){
         window.removeEventListener("beforeunload", beforeUnloadListener);
         window.removeEventListener("load", loadListener);
         playerClose();
-        let playerNode = document.getElementById(ID_PLAYER);
-        if(playerNode) {
-            playerNode.parentNode.removeChild(playerNode);
-        }
+//        let playerNode = document.getElementById(ID_PLAYER);
+//        if(playerNode) {
+//            playerNode.parentNode.removeChild(playerNode);
+//        }
         // remove node which init this
         if(foxhornNode && foxhornNode.parentNode) {
             foxhornNode.parentNode.removeChild(foxhornNode);
         }
     };
 })();
-
-foxhorn.installPlayer();
