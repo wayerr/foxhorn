@@ -108,7 +108,7 @@ class Rpc {
         let method = msg.method;
         if(!method) {
             console.error(this._where, `Unexpected message '${msg}' without 'method' field`);
-            return;
+            return false;
         }
         if(method === M_SYSTEM_UNLOAD) {
             this.close();
@@ -116,7 +116,7 @@ class Rpc {
         let handler = this.handlers[method];
         if(!handler) {
             this.debug && console.warn(this._where, ` Can not find handler for method '${method}' of message:`, msg);
-            return;
+            return false;
         }
         let arg = {
             args: msg.args || [],
@@ -124,6 +124,7 @@ class Rpc {
             sendResponse: (e) => sendResponse(e) // it prevent warning
         };
         handler(arg);
+        return true;
     }
 
     dispatcher(method) {

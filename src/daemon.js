@@ -15,6 +15,8 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+const M_CONTENT_GET_STATE = "content-get-state";
+
 class Daemon {
     constructor() {
         this.player = null;
@@ -158,7 +160,14 @@ class Daemon {
             args: args
         };
         let p = compat.p(browser.tabs.sendMessage, tabId, msg);
-        this.logging && p.catch((e) => console.error(`On send '${method}' to content we got error: ${e}`));
+        this.logging && p.catch((e) => {
+            if(M_CONTENT_GET_STATE === method && e.message) {
+                // state will test message which may 'touch' invalid pages,
+                // and generate many noize in log
+                return;
+            }
+            console.error(`On send '${method}' to content we got error:`, e);
+        });
         return p;
     }
 
@@ -272,7 +281,7 @@ class Daemon {
         this.setCurrentPlayer(arg);
 
         //test that tab has not script
-        this.sendToTab(arg.tabId, "content-get-state", [])
+        this.sendToTab(arg.tabId, M_CONTENT_GET_STATE, [])
             .catch(() => {
             //we inject player when content can not response
             let executor = (arr, cb) => {
