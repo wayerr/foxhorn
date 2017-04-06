@@ -227,13 +227,15 @@ foxhorn = new (function(){
         window.removeEventListener("beforeunload", beforeUnloadListener);
         window.removeEventListener("load", loadListener);
         playerClose();
-//        let playerNode = document.getElementById(ID_PLAYER);
-//        if(playerNode) {
-//            playerNode.parentNode.removeChild(playerNode);
-//        }
         // remove node which init this
         if(foxhornNode && foxhornNode.parentNode) {
             foxhornNode.parentNode.removeChild(foxhornNode);
         }
     };
+
+    this.init = () => {
+        this.send("on-content-inited");
+    };
 })();
+
+foxhorn.init();

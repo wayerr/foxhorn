@@ -18,6 +18,7 @@
 const ID_PLAYER_COMMON = "foxhorn_player_common";
 const ID_PLAYER_AGENT = "foxhorn_player_agent";
 const EV_PLAYER_UPDATE = "on-player-update";
+const EV_CONTENT_INITED = "on-content-inited";
 
 class Content {
     constructor() {
@@ -48,6 +49,8 @@ class Content {
             //let response = msg.response;
             if(method === EV_PLAYER_UPDATE) {
                 this.playerUpdated.apply(this, msg.args);
+            } else if(method === EV_CONTENT_INITED) {
+                this.injectAgent();
             }
         }.bind(this);
         window.addEventListener("message", this.onDomMessage);
@@ -95,11 +98,21 @@ class Content {
         addScript(ID_PLAYER_COMMON, 'src/player/_common.js', (scr) => {
             scr.setAttribute("data-init", JSON.stringify({logging: this.logging}));
         });
-        addScript(ID_PLAYER_AGENT, playerUrl, (scr) => {
-            if(arg.playerCode) {
-                scr.text = arg.playerCode;
-            }
-        });
+        this._agent = () => {
+            addScript(ID_PLAYER_AGENT, playerUrl, (scr) => {
+                if(arg.playerCode) {
+                    scr.text = arg.playerCode;
+                }
+            });
+        };
+    }
+
+    injectAgent() {
+        if(!this._agent) {
+            return;
+        }
+        this._agent();
+        this._agent = null;
     }
 
     getState() {
