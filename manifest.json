@@ -17,20 +17,16 @@
   "commands": {
     "cmd-play": {
       "suggested_key": {
-        "default": "MediaPlayPause",
-        "linux": "Ctrl+Space"
       },
       "description": "Toggle play/pause"
     },
     "cmd-prev": {
       "suggested_key": {
-        "default": "MediaPrevTrack"
       },
       "description": "Next track"
     },
     "cmd-next": {
       "suggested_key": {
-        "default": "MediaNextTrack"
       },
       "description": "Previous track"
     }
