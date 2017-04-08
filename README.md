@@ -34,7 +34,39 @@ Currently supported players:
 * youtube (through 'default' player)
 * vk.com
 
-Support planned:
+## Also you can add own player adapter 
 
-* bandcamp.com
-* soundcloud.com
+See options page. Example player:
+
+```js
+foxhorn_player = new class {
+    // declare player features:
+    //    F_PROGRESS_EVENT - player can invoke foxhorn.playerProgress(),
+    //                       when this feauture is not supported, plugin
+    //                       will invoke this.getProgress() every second
+    features: new Set([foxhorn.F_PROGRESS_EVENT])
+    // lifecycle methods
+    open: () => api.onEvent("update", foxhorn.playerProgress),
+    close: () => api.offEvent("update", foxhorn.playerProgress),
+    // toggle play/pause
+    play: () => api.isPlaying()? api.pause() : api.play(),
+    next: api.next,
+    prev: api.prev,
+    // return player progress as float between 0 - 1, be careful this may be called often
+    getProgress: api.getProgress,
+    // true only when playing, false otherwize (include paused)
+    isPlaying: api.isPlaying,
+    // mean that player has any playable media, when false - any non lifecycle
+    // method will not been called
+    hasMedia: () => !!api.getTrack(),
+    getTrack: () => {
+        let ct = api.getTrack();
+        return {
+            id:"track",
+            title: ct.title,
+            position: ct.duration * api.getProgress(),
+            duration: ct.duration // number of tracl length in milliseconds
+        };
+    }
+});
+```

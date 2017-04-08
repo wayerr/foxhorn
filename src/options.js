@@ -24,7 +24,7 @@ function listen(id, event, func) {
 
 const DEF_USER_PLAYER_CODE =
 `//see doc on https://github.com/wayerr/foxhorn
-foxhorn.setPlayer({
+foxhorn_player = new class {
         features: new Set([foxhorn.F_PROGRESS_EVENT])
         open: () => api.on("update", foxhorn.playerProgress),
         close: () => api.off(foxhorn.playerProgress),
