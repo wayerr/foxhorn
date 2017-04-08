@@ -22,6 +22,8 @@ domain:www.youtube.com   default
 
 ### Hotkeys
 
+*disabled due strange behaviour in firefox*
+
  - `MediaPlayPause` - Toggle play/pause
  - `MediaNextTrack` - Next track (not all players support)
  - `MediaPrevTrack` - Previous track  (not all players support)
