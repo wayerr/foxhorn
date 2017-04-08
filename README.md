@@ -65,7 +65,7 @@ foxhorn_player = new class {
             id:"track",
             title: ct.title,
             position: ct.duration * api.getProgress(),
-            duration: ct.duration // number of tracl length in milliseconds
+            duration: ct.duration // number of track length in milliseconds
         };
     }
 });
