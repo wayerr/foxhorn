@@ -16,18 +16,12 @@
   },
   "commands": {
     "cmd-play": {
-      "suggested_key": {
-      },
       "description": "Toggle play/pause"
     },
     "cmd-prev": {
-      "suggested_key": {
-      },
       "description": "Next track"
     },
     "cmd-next": {
-      "suggested_key": {
-      },
       "description": "Previous track"
     }
   },
