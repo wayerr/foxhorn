@@ -9,6 +9,8 @@ html, body {
     display: flex;
     flex-direction: column;
     width: 15em;
+    font-family: sans-serif;
+    font-size: small;
 }
 
 .panel-section {
