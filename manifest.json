@@ -1,9 +1,15 @@
 {
-  "version": "1.0",
+  "version": "1.1",
   "name": "FoxHorn",
   "description": "Tool for drive online media players.",
   "homepage_url": "https://github.com/wayerr/foxhorn",
   "manifest_version": 2,
+  "applications": {
+    "gecko": {
+      "id": "{981a2666-0f32-4ca5-94e8-e8cb039aa746}",
+      "strict_min_version": "50.0"
+    }
+  },
   "icons": {
     "48": "icons/logo-48.png"
   },
